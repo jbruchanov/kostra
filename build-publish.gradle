@@ -28,8 +28,8 @@ publishing {
             allowInsecureProtocol true
             url "http://192.168.168.250:8089/snapshots"
             credentials {
-                username = localProperties.get("dyno.username") ?: System.getenv("dyno.username") ?: ""
-                password = localProperties.get("dyno.password") ?: System.getenv("dyno.password") ?: ""
+                username = localProperties.get("dyno.username") ?: System.getenv("dyno_username") ?: ""
+                password = localProperties.get("dyno.password") ?: System.getenv("dyno_password") ?: ""
             }
         }
     }
