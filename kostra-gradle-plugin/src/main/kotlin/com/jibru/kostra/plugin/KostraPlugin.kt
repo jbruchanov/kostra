@@ -149,7 +149,7 @@ class KostraPlugin : Plugin<Project> {
             ?.map { it.name.capitalized() to it.outputDirectory }
             ?.onEach { (name, outputDir) ->
                 //copy predefined resources
-                project.tasks.create(KostraPluginConfig.Tasks.CopyResourcesForNativeTemplate_xy.format("Resources", name), Copy::class.java) {
+                project.tasks.register(KostraPluginConfig.Tasks.CopyResourcesForNativeTemplate_xy.format("Resources", name), Copy::class.java) {
                     it.group = KostraPluginConfig.Tasks.Group
                     it.from(extension.resourceDirs)
                     it.into(outputDir)
@@ -158,7 +158,7 @@ class KostraPlugin : Plugin<Project> {
                 }
 
                 //copy generated string dbs
-                project.tasks.create(KostraPluginConfig.Tasks.CopyResourcesForNativeTemplate_xy.format("DBs", name), Copy::class.java) {
+                project.tasks.register(KostraPluginConfig.Tasks.CopyResourcesForNativeTemplate_xy.format("DBs", name), Copy::class.java) {
                     it.group = KostraPluginConfig.Tasks.Group
                     it.from(generateDbTaskProvider)
                     it.into(outputDir)
