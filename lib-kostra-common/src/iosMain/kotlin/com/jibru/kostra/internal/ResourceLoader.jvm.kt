@@ -25,7 +25,7 @@ private object UIKitResource {
             }
             return byteArray
         } else {
-            throw UnableToOpenResourceStream(path)
+            throw UnableToOpenResourceStream("Path:'$path'\nFullPath:'$composeResourcesPath'")
         }
     }
 }

@@ -11,6 +11,6 @@ struct ComposeView: UIViewControllerRepresentable {
 
 struct ComposeView_Previews: PreviewProvider {
 	static var previews: some View {
-		ComposeView().ignoresSafeArea(.keyboard) // Compose has own keyboard handler
+		ComposeView().ignoresSafeArea(.all)
 	}
 }
