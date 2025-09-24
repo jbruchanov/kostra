@@ -22,20 +22,16 @@ import kotlin.String
 import kotlin.Suppress
 
 @Composable
-internal inline fun stringResource(key: StringResourceKey, vararg formatArgs: Any): String =
-    Resources.string.get(key, LocalQualifiers.current, *formatArgs)
+internal inline fun stringResource(key: StringResourceKey, vararg formatArgs: Any): String = Resources.string.get(key, LocalQualifiers.current, *formatArgs)
 
 @Composable
-internal inline fun painterResource(key: PainterResourceKey): Painter = Resources.painter(key,
-    LocalQualifiers.current)
+internal inline fun painterResource(key: PainterResourceKey): Painter = Resources.painter(key, LocalQualifiers.current)
 
 @Composable
-internal inline fun assetPath(key: AssetResourceKey): String = Resources.binary.get(key,
-    LocalQualifiers.current)
+internal inline fun assetPath(key: AssetResourceKey): String = Resources.binary.get(key, LocalQualifiers.current)
 
 @Composable
-internal inline fun binaryResource(key: AssetResourceKey): ByteArray =
-    Resources.binaryByteArray(key, LocalQualifiers.current)
+internal inline fun binaryResource(key: AssetResourceKey): ByteArray = Resources.binaryByteArray(key, LocalQualifiers.current)
 
 @Composable
 internal inline fun pluralResource(

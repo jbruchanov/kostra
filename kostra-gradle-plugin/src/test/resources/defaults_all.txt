@@ -23,20 +23,16 @@ import kotlin.String
 import kotlin.Suppress
 
 @Composable
-public inline fun stringResource(key: StringResourceKey, vararg formatArgs: Any): String =
-    Resources.string.get(key, LocalQualifiers.current, *formatArgs)
+public inline fun stringResource(key: StringResourceKey, vararg formatArgs: Any): String = Resources.string.get(key, LocalQualifiers.current, *formatArgs)
 
 @Composable
-public inline fun painterResource(key: PainterResourceKey): Painter = Resources.painter(key,
-    LocalQualifiers.current)
+public inline fun painterResource(key: PainterResourceKey): Painter = Resources.painter(key, LocalQualifiers.current)
 
 @Composable
-public inline fun assetPath(key: AssetResourceKey): String = Resources.binary.get(key,
-    LocalQualifiers.current)
+public inline fun assetPath(key: AssetResourceKey): String = Resources.binary.get(key, LocalQualifiers.current)
 
 @Composable
-public inline fun binaryResource(key: AssetResourceKey): ByteArray = Resources.binaryByteArray(key,
-    LocalQualifiers.current)
+public inline fun binaryResource(key: AssetResourceKey): ByteArray = Resources.binaryByteArray(key, LocalQualifiers.current)
 
 @Composable
 public inline fun pluralResource(
@@ -67,36 +63,28 @@ public inline fun ordinalResource(
 ): String = Resources.plural.get(key, LocalQualifiers.current, quantity, Ordinals, *formatArgs)
 
 @Composable
-public inline fun StringResourceKey.`get`(vararg formatArgs: Any): String =
-    Resources.string.get(this, LocalQualifiers.current, *formatArgs)
+public inline fun StringResourceKey.`get`(vararg formatArgs: Any): String = Resources.string.get(this, LocalQualifiers.current, *formatArgs)
 
 @Composable
-public inline fun PainterResourceKey.`get`(): Painter = Resources.painter(this,
-    LocalQualifiers.current)
+public inline fun PainterResourceKey.`get`(): Painter = Resources.painter(this, LocalQualifiers.current)
 
 @Composable
-public inline fun AssetResourceKey.getAssetPath(): String = Resources.binary.get(this,
-    LocalQualifiers.current)
+public inline fun AssetResourceKey.getAssetPath(): String = Resources.binary.get(this, LocalQualifiers.current)
 
 @Composable
-public inline fun BinaryResourceKey.`get`(): ByteArray = Resources.binaryByteArray(this,
-    LocalQualifiers.current)
+public inline fun BinaryResourceKey.`get`(): ByteArray = Resources.binaryByteArray(this, LocalQualifiers.current)
 
 @Composable
-public inline fun PluralResourceKey.`get`(quantity: Int, vararg formatArgs: Any): String =
-    Resources.plural.get(this, LocalQualifiers.current, quantity, Plurals, *formatArgs)
+public inline fun PluralResourceKey.`get`(quantity: Int, vararg formatArgs: Any): String = Resources.plural.get(this, LocalQualifiers.current, quantity, Plurals, *formatArgs)
 
 @Composable
-public inline fun PluralResourceKey.getOrdinal(quantity: Int, vararg formatArgs: Any): String =
-    Resources.plural.get(this, LocalQualifiers.current, quantity, Ordinals, *formatArgs)
+public inline fun PluralResourceKey.getOrdinal(quantity: Int, vararg formatArgs: Any): String = Resources.plural.get(this, LocalQualifiers.current, quantity, Ordinals, *formatArgs)
 
 @Composable
-public inline fun PluralResourceKey.`get`(quantity: IFixedDecimal, vararg formatArgs: Any): String =
-    Resources.plural.get(this, LocalQualifiers.current, quantity, Plurals, *formatArgs)
+public inline fun PluralResourceKey.`get`(quantity: IFixedDecimal, vararg formatArgs: Any): String = Resources.plural.get(this, LocalQualifiers.current, quantity, Plurals, *formatArgs)
 
 @Composable
-public inline fun PluralResourceKey.getOrdinal(quantity: IFixedDecimal, vararg formatArgs: Any):
-    String = Resources.plural.get(this, LocalQualifiers.current, quantity, Ordinals, *formatArgs)
+public inline fun PluralResourceKey.getOrdinal(quantity: IFixedDecimal, vararg formatArgs: Any): String = Resources.plural.get(this, LocalQualifiers.current, quantity, Ordinals, *formatArgs)
 
 ----
 @file:Suppress("NOTHING_TO_INLINE", "ktlint")
@@ -115,82 +103,61 @@ import kotlin.Int
 import kotlin.String
 import kotlin.Suppress
 
-public inline fun stringResource(key: StringResourceKey, vararg formatArgs: Any): String =
-    Resources.string.get(key, DefaultQualifiersProvider.current, *formatArgs)
+public inline fun stringResource(key: StringResourceKey, vararg formatArgs: Any): String = Resources.string.get(key, DefaultQualifiersProvider.current, *formatArgs)
 
-public inline fun painterResource(key: PainterResourceKey): ByteArray =
-    Resources.binaryByteArray(key, DefaultQualifiersProvider.current)
+public inline fun painterResource(key: PainterResourceKey): ByteArray = Resources.binaryByteArray(key, DefaultQualifiersProvider.current)
 
-public inline fun assetPath(key: AssetResourceKey): String = Resources.binary.get(key,
-    DefaultQualifiersProvider.current)
+public inline fun assetPath(key: AssetResourceKey): String = Resources.binary.get(key, DefaultQualifiersProvider.current)
 
-public inline fun binaryResource(key: AssetResourceKey): ByteArray = Resources.binaryByteArray(key,
-    DefaultQualifiersProvider.current)
+public inline fun binaryResource(key: AssetResourceKey): ByteArray = Resources.binaryByteArray(key, DefaultQualifiersProvider.current)
 
 public inline fun pluralResource(
   key: PluralResourceKey,
   quantity: Int,
   vararg formatArgs: Any,
-): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Plurals,
-    *formatArgs)
+): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Plurals, *formatArgs)
 
 public inline fun ordinalResource(
   key: PluralResourceKey,
   quantity: Int,
   vararg formatArgs: Any,
-): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Ordinals,
-    *formatArgs)
+): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Ordinals, *formatArgs)
 
 public inline fun pluralResource(
   key: PluralResourceKey,
   quantity: IFixedDecimal,
   vararg formatArgs: Any,
-): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Plurals,
-    *formatArgs)
+): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Plurals, *formatArgs)
 
 public inline fun ordinalResource(
   key: PluralResourceKey,
   quantity: IFixedDecimal,
   vararg formatArgs: Any,
-): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Ordinals,
-    *formatArgs)
+): String = Resources.plural.get(key, DefaultQualifiersProvider.current, quantity, Ordinals, *formatArgs)
 
-public inline fun StringResourceKey.`get`(vararg formatArgs: Any): String =
-    Resources.string.get(this, DefaultQualifiersProvider.current, *formatArgs)
+public inline fun StringResourceKey.`get`(vararg formatArgs: Any): String = Resources.string.get(this, DefaultQualifiersProvider.current, *formatArgs)
 
-public inline fun PainterResourceKey.getByteArray(): ByteArray = Resources.binaryByteArray(this,
-    DefaultQualifiersProvider.current)
+public inline fun PainterResourceKey.getByteArray(): ByteArray = Resources.binaryByteArray(this, DefaultQualifiersProvider.current)
 
-public inline fun AssetResourceKey.getAssetPath(): String = Resources.binary.get(this,
-    DefaultQualifiersProvider.current)
+public inline fun AssetResourceKey.getAssetPath(): String = Resources.binary.get(this, DefaultQualifiersProvider.current)
 
-public inline fun BinaryResourceKey.`get`(): ByteArray = Resources.binaryByteArray(this,
-    DefaultQualifiersProvider.current)
+public inline fun BinaryResourceKey.`get`(): ByteArray = Resources.binaryByteArray(this, DefaultQualifiersProvider.current)
 
-public inline fun PluralResourceKey.`get`(quantity: Int, vararg formatArgs: Any): String =
-    Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Plurals, *formatArgs)
+public inline fun PluralResourceKey.`get`(quantity: Int, vararg formatArgs: Any): String = Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Plurals, *formatArgs)
 
-public inline fun PluralResourceKey.getOrdinal(quantity: Int, vararg formatArgs: Any): String =
-    Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Ordinals, *formatArgs)
+public inline fun PluralResourceKey.getOrdinal(quantity: Int, vararg formatArgs: Any): String = Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Ordinals, *formatArgs)
 
-public inline fun PluralResourceKey.`get`(quantity: IFixedDecimal, vararg formatArgs: Any): String =
-    Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Plurals, *formatArgs)
+public inline fun PluralResourceKey.`get`(quantity: IFixedDecimal, vararg formatArgs: Any): String = Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Plurals, *formatArgs)
 
-public inline fun PluralResourceKey.getOrdinal(quantity: IFixedDecimal, vararg formatArgs: Any):
-    String = Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Ordinals,
-    *formatArgs)
+public inline fun PluralResourceKey.getOrdinal(quantity: IFixedDecimal, vararg formatArgs: Any): String = Resources.plural.get(this, DefaultQualifiersProvider.current, quantity, Ordinals, *formatArgs)
 
-public inline fun StringResourceKey.`get`(qualifiers: KQualifiers, vararg formatArgs: Any): String =
-    Resources.string.get(this, qualifiers, *formatArgs)
+public inline fun StringResourceKey.`get`(qualifiers: KQualifiers, vararg formatArgs: Any): String = Resources.string.get(this, qualifiers, *formatArgs)
 
-public inline fun PainterResourceKey.getByteArray(qualifiers: KQualifiers): ByteArray =
-    Resources.binaryByteArray(this, qualifiers)
+public inline fun PainterResourceKey.getByteArray(qualifiers: KQualifiers): ByteArray = Resources.binaryByteArray(this, qualifiers)
 
-public inline fun AssetResourceKey.getAssetPath(qualifiers: KQualifiers): String =
-    Resources.binary.get(this, qualifiers)
+public inline fun AssetResourceKey.getAssetPath(qualifiers: KQualifiers): String = Resources.binary.get(this, qualifiers)
 
-public inline fun BinaryResourceKey.`get`(qualifiers: KQualifiers): ByteArray =
-    Resources.binaryByteArray(this, qualifiers)
+public inline fun BinaryResourceKey.`get`(qualifiers: KQualifiers): ByteArray = Resources.binaryByteArray(this, qualifiers)
 
 public inline fun PluralResourceKey.`get`(
   qualifiers: KQualifiers,
