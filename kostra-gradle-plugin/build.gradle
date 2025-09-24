@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("org.jetbrains.kotlin.jvm") version(libs.versions.kotlin)
     id("java-gradle-plugin")
@@ -20,14 +22,14 @@ dependencies {
 
     testImplementation(libs.bundles.unittest.jvm)
     testImplementation(libs.truth)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-compileKotlin {
-    kotlinOptions.jvmTarget = libs.versions.jvmtarget.get()
-}
-
-compileTestKotlin {
-    kotlinOptions.jvmTarget = libs.versions.jvmtarget.get()
+kotlin {
+    jvmToolchain(libs.versions.jvmtarget.get() as int)
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget(libs.versions.jvmtarget.get())
+    }
 }
 
 java {
