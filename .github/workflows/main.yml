@@ -21,19 +21,15 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          #keep caching only for github hosts, as the cache is being there
-#          cache: gradle
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Grant execute permission for sample/gradlew
-        run: chmod +x sample/gradlew
+        run: chmod +x gradlew && chmod +x sample/gradlew
       - name: KtlintCheck
         run: sample/gradlew ktlintCheck
       - name: Build & Test
-        run: ./gradlew allTest test build
+        run: ./gradlew allTest test build --parallel --build-cache
       - name: Build & Test Sample
-        run: sample/gradlew clean allTest test build
+        run: sample/gradlew clean allTest test build --parallel --build-cache
 
       - name: Test Report
         uses: dorny/test-reporter@v1
