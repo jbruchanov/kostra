@@ -7,8 +7,9 @@ import com.jibru.text.sFormat
 interface Strings {
     fun get(key: StringResourceKey, qualifiers: KQualifiers): String
 
-    fun get(key: StringResourceKey, qualifiers: KQualifiers, vararg formatArgs: Any): String =
-        get(key, qualifiers).sFormat(*formatArgs)
+    fun get(key: StringResourceKey, qualifiers: KQualifiers, vararg formatArgs: Any): String {
+        return get(key, qualifiers).sFormat(*formatArgs)
+    }
 
     companion object : Strings {
         override fun get(key: StringResourceKey, qualifiers: KQualifiers): String =
