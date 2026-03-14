@@ -33,7 +33,7 @@ xcode = { id = "org.openbakery.xcode-plugin", version.ref = "xcode-plugin" }
 
 [versions]
 
-project-version = "0.5.0"
+project-version = "0.6.0"
 project-group = "com.jibru.kostra"
 android-sdk-compile = "36"
 android-sdk-min = "24"
