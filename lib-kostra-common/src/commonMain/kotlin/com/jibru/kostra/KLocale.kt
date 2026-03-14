@@ -65,6 +65,7 @@ value class KLocale(val key: Int) : Comparable<KLocale> {
     fun hasRegion(): Boolean = (key % LocaleOffsets[3]) != 0
 
     companion object {
+        const val MaxLocaleLen = 2
         val Undefined = KLocale(0)
 
         //ceil(log(('z' - 'a' + 1).pow(4), 2.0))
