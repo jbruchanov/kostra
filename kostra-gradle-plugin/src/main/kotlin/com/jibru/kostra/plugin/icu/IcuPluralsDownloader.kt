@@ -34,9 +34,11 @@ class IcuPluralsDownloader(
         val version = baseObject.obj("version")
 
         val items = baseObject.obj(jsonObjName) as Map<String, Map<String, String>>
-        val data = items.map { obj ->
-            KLocale(obj.key) to obj.value.map { it.key.replace("pluralRule-count-", "").let { PluralCategory.of(it) } to it.value }.toMap()
-        }.toMap()
+        val data = items
+            .filter { it.key.length <= KLocale.MaxLocaleLen }
+            .map { obj ->
+                KLocale(obj.key) to obj.value.map { it.key.replace("pluralRule-count-", "").let { PluralCategory.of(it) } to it.value }.toMap()
+            }.toMap()
 
         return Result(
             unicodeVersion = version["_unicodeVersion"].toString(),
