@@ -64,24 +64,26 @@ internal fun File.groupQualifiers(anyLocale: Boolean = false): GroupQualifiers {
                         val item = list.getOrNull(nextIdx) ?: return@repeat
                         // Skip DPI values that appear in the original list between locale parts
                         if (item in dpiValues) return@repeat
-                        // Script: exactly 4 alphabetic chars (e.g., "hans", "hant", "latn")
+                        // Script: exactly 4 alphabetic chars (ISO 15924, e.g., "hans", "hant", "latn")
                         // Exclude r-prefix region attempts (e.g., "rcde" from "rCDE")
-                        val isRegionAttempt = item.startsWith("r") && item.length in 3..4
-                        if (strLocaleScript == null && item.length == 4 && item.all { c -> c.isLetter() } && !isRegionAttempt) {
-                            if (anyLocale || locales.any { tag -> tag.startsWith("$strLocale-$item") }) {
-                                strLocaleScript = item
-                                otherModifiers.remove(item)
-                                nextIdx++
-                                return@repeat
-                            }
+                        val isRegionPrefix = item.startsWith("r") && item.length in 3..4
+                        if (strLocaleScript == null && item.length == 4 && item.all { c -> c.isLetter() } && !isRegionPrefix) {
+                            // Accept script without JDK locale validation — JDK's getAvailableLocales()
+                            // often lacks script subtags (e.g., "zh-hans"), causing silent script loss
+                            strLocaleScript = item
+                            otherModifiers.remove(item)
+                            nextIdx++
+                            return@repeat
                         }
-                        // Region: "r" prefix + 2 chars, or just 2 chars in anyLocale mode
+                        // Region: "r" prefix + 2-3 chars (e.g., "rUS" → "us", "rCDE" → "cde"), always accepted
+                        // In anyLocale mode: bare 2-3 char region also accepted (e.g., "us", "cde")
+                        // In strict mode: bare 2-3 char validated against JDK locales
                         if (strLocaleRegion == null) {
-                            val rPrefixRegion = item.startsWith("r") && item.length == 3
-                            val twoCharRegion = item.length == 2
-                            if (rPrefixRegion || (anyLocale && twoCharRegion)) {
-                                val region = (if (item.startsWith("r")) item.drop(1) else item).take(2)
-                                if (anyLocale || locales.contains("$strLocale-$region")) {
+                            val rPrefixRegion = item.startsWith("r") && item.length in 3..4
+                            val shortRegion = item.length in 2..3
+                            if (rPrefixRegion || shortRegion) {
+                                val region = if (item.startsWith("r")) item.drop(1) else item
+                                if (rPrefixRegion || anyLocale || locales.contains("$strLocale-$region")) {
                                     strLocaleRegion = region
                                     otherModifiers.remove(item)
                                     nextIdx++

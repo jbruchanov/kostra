@@ -1,7 +1,10 @@
 package com.jibru.kostra.plugin.task
 
+import com.jibru.kostra.KLocale
 import com.jibru.kostra.plugin.KostraPluginConfig
 import com.jibru.kostra.plugin.KostraPluginExtension
+import com.jibru.kostra.plugin.ResItem
+import com.jibru.kostra.plugin.ResItemsProcessor
 import java.io.File
 import java.io.FileOutputStream
 import java.io.ObjectOutputStream
@@ -30,9 +33,57 @@ abstract class AnalyseResourcesTask : DefaultTask() {
             resourceDirs = extension.allResourceDirs(),
             fileResolverConfig = extension.toFileResolverConfig(),
         )
+
+        // Validate default/fallback database has all keys defined
+        val processor = ResItemsProcessor(items)
+        validateDefaultFallback("string", processor.stringsForDbs, processor.stringsDistinctKeys)
+        validateDefaultPluralFallback(processor)
+
         val outputFile = outputFile.get().asFile
         outputFile.parentFile.mkdirs()
         val writer = ObjectOutputStream(FileOutputStream(outputFile))
         writer.writeObject(items)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun validateDefaultPluralFallback(processor: ResItemsProcessor) {
+        val pluralData = processor.stringsAndPluralsForDb[ResItem.Plural]
+            ?.let { it as? Map<KLocale, List<Pair<String, ResItem.Plurals?>>> }
+            ?: return
+        val defaults = pluralData[KLocale.Undefined] ?: run {
+            val allKeys = processor.pluralsDistinctKeys ?: return
+            throw IllegalStateException(
+                "Default/fallback plural database is missing! All plural keys must have a default value defined in the base (non-qualified) resource file.\n" +
+                    "Missing default for keys: ${allKeys.joinToString { "'$it'" }}",
+            )
+        }
+        // Check only that each plural key is defined (not null), ignoring individual category nulls
+        val missingKeys = defaults.filter { (_, item) -> item == null }.map { (key, _) -> key }
+        if (missingKeys.isNotEmpty()) {
+            throw IllegalStateException(
+                "Default/fallback plural database is missing values for keys: ${missingKeys.joinToString { "'$it'" }}\n" +
+                    "All plural keys must have a default value defined in the base (non-qualified) resource file.",
+            )
+        }
+    }
+
+    private fun validateDefaultFallback(type: String, data: Map<KLocale, List<String?>>, keys: List<String>?) {
+        if (data.isEmpty() || keys.isNullOrEmpty()) return
+        val defaults = data[KLocale.Undefined]
+        if (defaults == null) {
+            throw IllegalStateException(
+                "Default/fallback $type database is missing! All $type keys must have a default value defined in the base (non-qualified) resource file.\n" +
+                    "Missing default for keys: ${keys.joinToString { "'$it'" }}",
+            )
+        }
+        val missingKeys = keys.zip(defaults)
+            .filter { (_, value) -> value == null }
+            .map { (key, _) -> key }
+        if (missingKeys.isNotEmpty()) {
+            throw IllegalStateException(
+                "Default/fallback $type database is missing values for keys: ${missingKeys.joinToString { "'$it'" }}\n" +
+                    "All $type keys must have a default value defined in the base (non-qualified) resource file.",
+            )
+        }
     }
 }

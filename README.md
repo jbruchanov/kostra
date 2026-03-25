@@ -534,6 +534,16 @@ String and plural resources are resolved using the following fallback chain:
 
 File/painter/binary resources follow the same locale fallback, with each step also trying with and without DPI qualifier.
 
+Each unique locale produces its own database file, e.g.:
+- `string-default.db` — fallback (undefined locale)
+- `string-zh-hans.db` — Chinese Simplified
+- `string-zh-hant.db` — Chinese Traditional
+- `string-en.db` — English
+- `string-en-us.db` — English US
+
+**Important:** The default/fallback database (`string-default.db`) must define values for **all** string/plural keys.
+The build will fail if any key is missing a default value, since it serves as the last-resort fallback at runtime.
+
 #### Strings formatting
 
 There is no support for any advanced stuff like html markups etc, strings are taken and provided exactly as they are in XML.
