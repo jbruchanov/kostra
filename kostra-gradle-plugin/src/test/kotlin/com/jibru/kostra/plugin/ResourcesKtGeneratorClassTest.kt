@@ -178,15 +178,15 @@ class ResourcesKtGeneratorClassTest {
               string = StringDatabase(
                 mapOf(
                   KLocale.Undefined to "kresources/string-default.db",
-                  KLocale(3_19_00_00) to "kresources/string-cs.db",
-                  KLocale(5_14_00_00) to "kresources/string-en.db",
-                  KLocale(5_14_07_02) to "kresources/string-engb.db",
+                  KLocale(1_046_035_320_300L) to "kresources/string-cs.db",
+                  KLocale(1_558_592_627_247L) to "kresources/string-en.db",
+                  KLocale(1_558_694_132_478L) to "kresources/string-en-gb.db",
                 )
               ),
               plural = PluralDatabase(
                 mapOf(
                   KLocale.Undefined to "kresources/plural-default.db",
-                  KLocale(3_19_00_00) to "kresources/plural-cs.db",
+                  KLocale(1_046_035_320_300L) to "kresources/plural-cs.db",
                 )
               ),
               binary = FileDatabase("kresources/binary.db"),

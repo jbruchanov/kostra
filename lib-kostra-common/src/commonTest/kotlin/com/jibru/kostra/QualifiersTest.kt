@@ -32,14 +32,23 @@ class QualifiersTest {
     }
 
     @Test
-    fun withNoLocaleRegion() {
-        assertEquals(KQualifiers("en", dpi = KDpi.XXHDPI), KQualifiers("en-GB", dpi = KDpi.XXHDPI).withNoLocaleRegion())
-        assertEquals(KQualifiers("en", dpi = KDpi.XXHDPI), KQualifiers("en", dpi = KDpi.XXHDPI).withNoLocaleRegion())
-        assertEquals(KQualifiers(KLocale.Undefined, dpi = KDpi.XXHDPI), KQualifiers(KLocale.Undefined, dpi = KDpi.XXHDPI).withNoLocaleRegion())
+    fun withLocaleNoRegion() {
+        assertEquals(KQualifiers("en", dpi = KDpi.XXHDPI), KQualifiers("en-GB", dpi = KDpi.XXHDPI).withLocaleNoRegion())
+        assertEquals(KQualifiers("en", dpi = KDpi.XXHDPI), KQualifiers("en", dpi = KDpi.XXHDPI).withLocaleNoRegion())
+        assertEquals(KQualifiers(KLocale.Undefined, dpi = KDpi.XXHDPI), KQualifiers(KLocale.Undefined, dpi = KDpi.XXHDPI).withLocaleNoRegion())
 
-        assertEquals(KQualifiers("en", dpi = KDpi.Undefined), KQualifiers("en-GB", dpi = KDpi.Undefined).withNoLocaleRegion())
-        assertEquals(KQualifiers("en", dpi = KDpi.Undefined), KQualifiers("en", dpi = KDpi.Undefined).withNoLocaleRegion())
-        assertEquals(KQualifiers(KLocale.Undefined, dpi = KDpi.Undefined), KQualifiers(KLocale.Undefined, dpi = KDpi.Undefined).withNoLocaleRegion())
+        assertEquals(KQualifiers("en", dpi = KDpi.Undefined), KQualifiers("en-GB", dpi = KDpi.Undefined).withLocaleNoRegion())
+        assertEquals(KQualifiers("en", dpi = KDpi.Undefined), KQualifiers("en", dpi = KDpi.Undefined).withLocaleNoRegion())
+        assertEquals(KQualifiers(KLocale.Undefined, dpi = KDpi.Undefined), KQualifiers(KLocale.Undefined, dpi = KDpi.Undefined).withLocaleNoRegion())
+    }
+
+    @Test
+    fun withLocaleLanguageOnly() {
+        assertEquals(KQualifiers("en", dpi = KDpi.XXHDPI), KQualifiers("en-GB", dpi = KDpi.XXHDPI).withLocaleLanguageOnly())
+        assertEquals(
+            KQualifiers(KLocale("zh"), dpi = KDpi.Undefined),
+            KQualifiers(KLocale("zh", null, "Hans"), dpi = KDpi.Undefined).withLocaleLanguageOnly(),
+        )
     }
 
     @Test

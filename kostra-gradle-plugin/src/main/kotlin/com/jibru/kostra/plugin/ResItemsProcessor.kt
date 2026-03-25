@@ -4,6 +4,7 @@ package com.jibru.kostra.plugin
 
 import com.jibru.kostra.BinaryResourceKey
 import com.jibru.kostra.KLocale
+import com.jibru.kostra.KQualifiers
 import com.jibru.kostra.PainterResourceKey
 import com.jibru.kostra.ResourceKey
 import com.jibru.kostra.plugin.ext.distinctByLast
@@ -113,10 +114,10 @@ open class ResItemsProcessor(private val items: List<ResItem>) {
             .map {
                 it
                     .mapValues { (baseDbKey, items) ->
-                        val dbKey1 = (baseDbKey.dbRootKey.toLong() shl Int.SIZE_BITS)
+                        val dbKey1 = (baseDbKey.dbRootKey.toLong() shl KQualifiers.Bits)
                         items.map { resItem ->
                             val item = resItem as ResItem.FileRes
-                            val dbKey = dbKey1 or item.qualifiers.key.toLong()
+                            val dbKey = dbKey1 or item.qualifiers.key
                             dbKey to item.value
                         }
                     }

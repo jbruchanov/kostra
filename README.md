@@ -70,16 +70,30 @@ Qualifiers are definable per file/folder seperated by a dash. Similarly like [An
 them. The library supports only 2 type of qualifiers.
 [DPI](https://github.com/jbruchanov/kostra/blob/develop/lib-kostra-common/src/commonMain/kotlin/com/jibru/kostra/KDpi.kt) &
 [Locale](https://github.com/jbruchanov/kostra/blob/develop/lib-kostra-common/src/commonMain/kotlin/com/jibru/kostra/KLocale.kt).
+Locale supports up to 3 components:
+
+| Component | Length | Description | Examples |
+|---|---|---|---|
+| Language | 2-3 chars | [ISO 639](http://www.loc.gov/standards/iso639-2/php/code_list.php) language code | `en`, `cs`, `ars` |
+| Region | 2-3 chars | [ISO 3166-1-alpha-2](https://www.loc.gov/standards/iso639-2/php/code_list.php) region code, preceded by lowercase `r` in dash format | `rUS`, `rGB`, `rCN` |
+| Script | 2-4 chars | [ISO 15924](https://unicode.org/iso15924/iso15924-codes.html) script code (typically 4 chars) | `Hans`, `Hant`, `Latn` |
 
 General format: `<group>-<qualifier>/**/<resources_key>-<qualifier>`
 <br />
-Example: `image-en-rGB-xxhdpi/flag.jpg` or `image/flag-en-rGB-xxhdpi.jpg`
+Example: `image-en-rGB-xxhdpi/flag.jpg` or `image/flag-en-rGB-xxhdpi.jpg` or `image-zh-Hans/flag.png`
+
+Two locale qualifier formats are supported:
+
+**Dash format** (Android-compatible): language[-script][-rRegion] <br />
+Examples: `en`, `en-rUS`, `ars`, `zh-Hans`, `zh-Hant-rTW`
+
+**[BCP 47](https://developer.android.com/guide/topics/resources/providing-resources#AlternativeResources) format**: `b+<language>[+<script>][+<region>]` <br />
+Examples: `b+zh+Hant`, `b+zh+Hans+CN`, `b+en+US`
+
+Both formats produce the same result: `strings-zh-Hans.xml` and `strings-b+zh+Hans.xml` resolve identically.
 
 DPI is defined as a set of `nodpi`, `ldpi`, `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`, `tvdpi` values in same way what
 [Android](https://developer.android.com/guide/topics/resources/providing-resources#AlternativeResources) is using.
-<br/>
-The language is defined by a two-letter [ISO 639-1](http://www.loc.gov/standards/iso639-2/php/code_list.php) language code,
-optionally followed by a two-letter [ISO 3166-1-alpha-2](https://www.loc.gov/standards/iso639-2/php/code_list.php) region code (preceded by lowercase `r`). <br />
 
 - order of qualifiers don't matter.
 - a dash `-` is qualifier divider, so key is defined by filename upto first `-` found.
@@ -87,7 +101,7 @@ optionally followed by a two-letter [ISO 3166-1-alpha-2](https://www.loc.gov/sta
 - `group` is optional, if undefined given the file saved directly in "resources" folder directly, they will be put into `root` group.
 - any non-easily translatable names to kotlin property will be escaped using backticks, for example ``` K.image.`1` ```.
 - files with empty key are ignored, e.g. `".DS_STORE"`, on the other hand file `" .xml"` is valid and accessible via ``` K.root.` ` ```.
-- if `kostra.strictLocale = false` locale can be anything `[a-Z]{2,4}`, otherwise must be known combination for `java.util.Locale`.
+- if `kostra.strictLocale = false` locale can be anything `[a-Z]{2,4}` per segment (language 2-3, region 2-3, script 2-4), otherwise must be known combination for `java.util.Locale`.
 - DPI qualifier is ignored for strings!
 - device DPI must match exactly the DPI qualifier, otherwise goes directly for a default/fallback value. There is currently no
   [BestMatch](https://developer.android.com/guide/topics/resources/providing-resources#BestMatch) like Android has. (`XXHDPI` device takes `XXHDPI` orElse `Default` only)
@@ -109,11 +123,21 @@ resources/images-en-rGB/flag.png
 resources/images-xxhdpi-en/flag.png
 #taken when EN locale && XXHDPI
 resources/images-en-rGB-xxhdpi/flag.png
+#taken when zh-Hans (Chinese Simplified) locale, no matter of DPI
+resources/images-zh-Hans/flag.png
+#taken when 3-letter language code 'ars', no matter of DPI
+resources/images-ars/flag.png
 
 #strings can be simply in 1 folder as the qualifier can be on the file itself
 resources/strings/strings.xml
 resources/strings/strings-en.xml
 resources/strings/strings-en-rUS.xml
+resources/strings/strings-zh-Hans.xml
+
+#BCP 47 format: b+lang+script or b+lang+script+region
+resources/strings/strings-b+zh+Hans.xml
+resources/strings/strings-b+zh+Hant+TW.xml
+resources/images-b+zh+Hans/flag.png
 
 #unknown qualifier can be taken as a locale if `kostra.strictLocale = false`
 resources/images/flag-xxxx.png
@@ -495,6 +519,20 @@ and `trimIndent` attributes which are calling kotlin variant of these methods on
 
 [BestMatch](https://developer.android.com/guide/topics/resources/providing-resources#BestMatch) for DPIs is not supported.
 If a device falls into `XXHDPI` category, kostra will try to search a resource in order  `XXHDPI` then `Default` only.
+
+#### Locale Fallback Order
+
+String and plural resources are resolved using the following fallback chain:
+
+| Step | Locale | Example for `zh-Hans-CN` | Method |
+|---|---|---|---|
+| 1 | `lang+script+region` | `zh-Hans-CN` | exact match |
+| 2 | `lang+script` | `zh-Hans` | strip region |
+| 3 | `lang+region` | `zh-CN` | strip script |
+| 4 | `lang` | `zh` | language only |
+| 5 | `default` | fallback | undefined locale |
+
+File/painter/binary resources follow the same locale fallback, with each step also trying with and without DPI qualifier.
 
 #### Strings formatting
 

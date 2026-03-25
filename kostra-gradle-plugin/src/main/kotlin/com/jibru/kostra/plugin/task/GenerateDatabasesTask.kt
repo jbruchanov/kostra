@@ -62,7 +62,7 @@ abstract class GenerateDatabasesTask : DefaultTask() {
 
     private fun saveDataIntoDb(type: String, data: Map<KLocale, List<String?>>, fileNameTemplate: String, location: File) {
         data.forEach { (locale, items) ->
-            val tag = if (locale == KLocale.Undefined) "default" else locale.languageRegion
+            val tag = if (locale == KLocale.Undefined) "default" else locale.tag
             val db = File(location, fileNameTemplate.format(tag))
             val dbData = BinaryDatabase().apply { setList(items) }.save()
             db.writeBytes(dbData)

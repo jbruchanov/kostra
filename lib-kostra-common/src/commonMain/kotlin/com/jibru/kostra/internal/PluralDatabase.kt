@@ -24,15 +24,23 @@ open class PluralDatabase(localeDatabases: Map<KLocale, String>) : Plurals {
     }
 
     override fun get(key: PluralResourceKey, qualifiers: KQualifiers, quantity: IFixedDecimal, type: Plurals.Type): String {
-        //try locale+region if exists
-        return qualifiers.locale.takeIf { it.hasRegion() }
-            ?.let { locale -> getValue(key, qualifiers.locale, type.pluralCategory(quantity, locale)) }
-            //try locale only
-            ?: qualifiers.locale.takeIf { it != KLocale.Undefined }
-                ?.let { qualifiers.locale.languageLocale() }
-                ?.let { locale -> getValue(key, locale, type.pluralCategory(quantity, locale)) }
+        val locale = qualifiers.locale
+        //try lang+script+region (exact)
+        return getValue(key, locale, type.pluralCategory(quantity, locale))
+            //try lang+script (strip region)
+            ?: locale.takeIf { it.hasRegion() }
+                ?.let { it.languageScriptLocale() }
+                ?.let { l -> getValue(key, l, type.pluralCategory(quantity, l)) }
+            //try lang+region (strip script)
+            ?: locale.takeIf { it.hasScript() }
+                ?.let { it.languageRegionLocale() }
+                ?.let { l -> getValue(key, l, type.pluralCategory(quantity, l)) }
+            //try lang only
+            ?: locale.takeIf { it != KLocale.Undefined }
+                ?.let { it.languageLocale() }
+                ?.let { l -> getValue(key, l, type.pluralCategory(quantity, l)) }
             //fallback
-            ?: getValue(key, KLocale.Undefined, type.pluralCategory(quantity, qualifiers.locale))
+            ?: getValue(key, KLocale.Undefined, type.pluralCategory(quantity, locale))
             ?: getValue(key, KLocale.Undefined, PluralCategory.Other)
             ?: throw MissingResourceException(key, qualifiers, "plural")
     }

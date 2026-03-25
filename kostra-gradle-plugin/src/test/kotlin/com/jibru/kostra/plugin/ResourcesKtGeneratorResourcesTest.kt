@@ -83,8 +83,8 @@ class ResourcesKtGeneratorResourcesTest {
               string = StringDatabase(
                 mapOf(
                   KLocale.Undefined to "kresources/string-default.db",
-                  KLocale(4_05_00_00) to "kresources/string-de.db",
-                  KLocale(5_14_00_00) to "kresources/string-en.db",
+                  KLocale(1_182_019_911_939L) to "kresources/string-de.db",
+                  KLocale(1_558_592_627_247L) to "kresources/string-en.db",
                 )
               ),
               plural = PluralDatabase(

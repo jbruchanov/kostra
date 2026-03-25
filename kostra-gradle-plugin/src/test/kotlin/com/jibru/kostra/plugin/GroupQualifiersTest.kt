@@ -30,7 +30,7 @@ class GroupQualifiersTest {
 
     @Test
     fun groupQualifiersInvalid() {
-        assertThrows<IllegalArgumentException> { File("group-abcde").groupQualifiers(anyLocale = true) }
+        assertThrows<IllegalArgumentException> { File("group-abcdefg").groupQualifiers(anyLocale = true) }
     }
 
     @Test
@@ -64,6 +64,59 @@ class GroupQualifiersTest {
         assertThat(f("en", "cs").groupQualifiers().qualifiers).isEqualTo(KQualifiers("en"))
         assertThat(f("xhdpi", "xhdpi").groupQualifiers().qualifiers).isEqualTo(KQualifiers(dpi = KDpi.XHDPI))
         assertThat(f("en", "xxhdpi", "cs", "xhdpi").groupQualifiers().qualifiers).isEqualTo(KQualifiers("en", dpi = KDpi.XXHDPI))
+    }
+
+    @Test
+    fun `groupQualifiers WHEN script in dash format`() {
+        // zh-Hans and zh-Hant should be distinct
+        val zhHans = File("group-zh-Hans").groupQualifiers()
+        val zhHant = File("group-zh-Hant").groupQualifiers()
+        assertThat(zhHans.qualifiers).isEqualTo(KQualifiers(KLocale("zh", null, "Hans")))
+        assertThat(zhHant.qualifiers).isEqualTo(KQualifiers(KLocale("zh", null, "Hant")))
+        assertThat(zhHans.qualifiers).isNotEqualTo(zhHant.qualifiers)
+
+        // Script + region
+        assertThat(File("group-zh-Hans-rCN").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", "CN", "Hans")))
+        assertThat(File("group-zh-Hant-rTW").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", "TW", "Hant")))
+
+        // Script + DPI
+        assertThat(File("group-zh-Hans-xxhdpi").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", null, "Hans"), KDpi.XXHDPI))
+
+        // Script + region + DPI
+        assertThat(File("group-zh-Hans-rCN-xxhdpi").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", "CN", "Hans"), KDpi.XXHDPI))
+    }
+
+    @Test
+    fun `groupQualifiers WHEN BCP 47 format`() {
+        // b+lang+script
+        assertThat(File("group-b+zh+Hant").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", null, "Hant")))
+        assertThat(File("group-b+zh+Hans").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", null, "Hans")))
+
+        // b+lang+script+region
+        assertThat(File("group-b+zh+Hant+TW").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", "TW", "Hant")))
+
+        // b+lang+region (no script)
+        assertThat(File("group-b+en+US").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("en", "US")))
+
+        // b+lang+script + DPI
+        assertThat(File("group-b+zh+Hans-xxhdpi").groupQualifiers().qualifiers)
+            .isEqualTo(KQualifiers(KLocale("zh", null, "Hans"), KDpi.XXHDPI))
+
+        // zh-Hans ≠ zh-Hant via BCP 47
+        assertThat(File("group-b+zh+Hans").groupQualifiers().qualifiers)
+            .isNotEqualTo(File("group-b+zh+Hant").groupQualifiers().qualifiers)
+
+        // BCP 47 works same in strict and anyLocale modes
+        assertThat(File("group-b+zh+Hant").groupQualifiers(anyLocale = true).qualifiers)
+            .isEqualTo(File("group-b+zh+Hant").groupQualifiers(anyLocale = false).qualifiers)
     }
 
     @Test
@@ -103,6 +156,15 @@ private class StrictGroupQualifiersArgsProvider : ArgumentsProvider {
             //mixed
             Arguments.of(null, "group1-en-xxhdpi", GroupQualifiers("group1", KQualifiers("en", KDpi.XXHDPI))),
             Arguments.of(null, "group2-xhdpi-en-rGB", GroupQualifiers("group2", KQualifiers("enGB", KDpi.XHDPI))),
+            //script (dash format)
+            Arguments.of(null, "group-zh-Hans", GroupQualifiers("group", KQualifiers(KLocale("zh", null, "Hans")))),
+            Arguments.of(null, "group-zh-Hant", GroupQualifiers("group", KQualifiers(KLocale("zh", null, "Hant")))),
+            Arguments.of(null, "group-zh-Hans-rCN", GroupQualifiers("group", KQualifiers(KLocale("zh", "CN", "Hans")))),
+            //BCP 47 format
+            Arguments.of(null, "group-b+zh+Hant", GroupQualifiers("group", KQualifiers(KLocale("zh", null, "Hant")))),
+            Arguments.of(null, "group-b+zh+Hant+TW", GroupQualifiers("group", KQualifiers(KLocale("zh", "TW", "Hant")))),
+            Arguments.of(null, "group-b+en+US", GroupQualifiers("group", KQualifiers(KLocale("en", "US")))),
+            Arguments.of(null, "group1-b+zh+Hans-xxhdpi", GroupQualifiers("group1", KQualifiers(KLocale("zh", null, "Hans"), KDpi.XXHDPI))),
             //somehow invalid
             Arguments.of(true, "group-en-xhdpi-rUS", GroupQualifiers("group", KQualifiers("en", KDpi.XHDPI))),
             Arguments.of(true, "group-ab-vvhdpi", GroupQualifiers("group", KQualifiers.Undefined)),

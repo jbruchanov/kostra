@@ -7,7 +7,7 @@ import com.jibru.kostra.plugin.ext.takeIfNotEmpty
 import java.io.File
 
 private val locales = java.util.Locale.getAvailableLocales().map { it.toLanguageTag().lowercase() }.toSortedSet()
-private val dpiMap = KDpi.values().associateBy { it.qualifier }
+private val dpiMap = KDpi.entries.associateBy { it.qualifier }
 private val dpiValues = dpiMap.keys.filter { it.isNotEmpty() }.toSet()
 
 data class GroupQualifiers(
@@ -32,29 +32,75 @@ internal fun File.groupQualifiers(anyLocale: Boolean = false): GroupQualifiers {
                 .firstOrNull()
                 ?.also { otherModifiers.remove(it) }
 
-            val strLocale = (if (anyLocale) otherModifiers.firstOrNull() else otherModifiers.intersect(locales).firstOrNull())
-                ?.also { otherModifiers.remove(it) }
+            // Check for BCP 47 tag (b+lang[+script][+region]), e.g., "b+zh+hant" or "b+zh+hant+tw"
+            val bcp47 = otherModifiers.firstOrNull { it.startsWith("b+") }
 
-            //looking for stuff like en-rUS
-            val strLocaleRegion = strLocale
-                ?.let { list.getOrNull(list.indexOf(it) + 1) }
-                /*
-                    https://developer.android.com/guide/topics/resources/providing-resources
-                    The language is defined by a two-letter ISO 639-1 language code, optionally followed by a two-letter ISO 3166-1-alpha-2 region code (preceded by lowercase r).
-                 */
-                ?.takeIf {
-                    val rPrefixRegion = it.startsWith("r") && it.length == 3
-                    val twoCharRegion = it.length == 2
-                    rPrefixRegion || (anyLocale && twoCharRegion)
+            val strLocale: String?
+            var strLocaleRegion: String? = null
+            var strLocaleScript: String? = null
+
+            if (bcp47 != null) {
+                otherModifiers.remove(bcp47)
+                val parts = bcp47.removePrefix("b+").split("+")
+                strLocale = parts.getOrNull(0)
+                for (i in 1 until parts.size) {
+                    val p = parts[i]
+                    when (p.length) {
+                        4 -> if (strLocaleScript == null) strLocaleScript = p
+                        in 2..3 -> if (strLocaleRegion == null) strLocaleRegion = p
+                    }
                 }
-                ?.let {
-                    val region = (if (it.startsWith("r")) it.drop(1) else it).take(2)
-                    if (anyLocale || locales.contains("$strLocale-$region")) region else null
+            } else {
+                // Existing dash-based format parsing
+                strLocale = (if (anyLocale) otherModifiers.firstOrNull() else otherModifiers.intersect(locales).firstOrNull())
+                    ?.also { otherModifiers.remove(it) }
+
+                // Scan items following the locale for region and/or script
+                // BCP 47 order: language-script-region, e.g., "zh-Hans-rCN"
+                if (strLocale != null) {
+                    val localeIdx = list.indexOf(strLocale)
+                    var nextIdx = localeIdx + 1
+                    repeat(2) {
+                        val item = list.getOrNull(nextIdx) ?: return@repeat
+                        // Skip DPI values that appear in the original list between locale parts
+                        if (item in dpiValues) return@repeat
+                        // Script: exactly 4 alphabetic chars (e.g., "hans", "hant", "latn")
+                        // Exclude r-prefix region attempts (e.g., "rcde" from "rCDE")
+                        val isRegionAttempt = item.startsWith("r") && item.length in 3..4
+                        if (strLocaleScript == null && item.length == 4 && item.all { c -> c.isLetter() } && !isRegionAttempt) {
+                            if (anyLocale || locales.any { tag -> tag.startsWith("$strLocale-$item") }) {
+                                strLocaleScript = item
+                                otherModifiers.remove(item)
+                                nextIdx++
+                                return@repeat
+                            }
+                        }
+                        // Region: "r" prefix + 2 chars, or just 2 chars in anyLocale mode
+                        if (strLocaleRegion == null) {
+                            val rPrefixRegion = item.startsWith("r") && item.length == 3
+                            val twoCharRegion = item.length == 2
+                            if (rPrefixRegion || (anyLocale && twoCharRegion)) {
+                                val region = (if (item.startsWith("r")) item.drop(1) else item).take(2)
+                                if (anyLocale || locales.contains("$strLocale-$region")) {
+                                    strLocaleRegion = region
+                                    otherModifiers.remove(item)
+                                    nextIdx++
+                                    return@repeat
+                                }
+                            }
+                        }
+                    }
                 }
-                ?.also { otherModifiers.remove(it) }
+            }
 
             try {
-                val locale = strLocale?.let { if (anyLocale) KLocale(it + (strLocaleRegion ?: "")) else KLocale(it, strLocaleRegion) } ?: KLocale.Undefined
+                val locale = strLocale?.let {
+                    if (strLocaleRegion != null || strLocaleScript != null) {
+                        KLocale(it, strLocaleRegion, strLocaleScript)
+                    } else {
+                        KLocale(it) // let packCode handle compound strings (e.g., "abcd" → lang+region)
+                    }
+                } ?: KLocale.Undefined
                 val dpi = strDpi?.let { dpiMap.getValue(it) } ?: KDpi.Undefined
                 KQualifiers(locale = locale, dpi = dpi)
             } catch (e: Throwable) {

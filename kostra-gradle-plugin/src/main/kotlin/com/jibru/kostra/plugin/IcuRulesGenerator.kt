@@ -4,6 +4,7 @@ import com.ibm.icu.text.PluralRules
 import com.jibru.kostra.KLocale
 import com.jibru.kostra.icu.PluralCategory
 import com.jibru.kostra.plugin.ext.addDefaultSuppressAnnotation
+import com.jibru.kostra.plugin.ext.categoryComment
 import com.jibru.kostra.plugin.ext.formattedDbKey
 import com.jibru.kostra.plugin.ext.minify
 import com.jibru.kostra.plugin.icu.IcuPluralRules
@@ -115,7 +116,7 @@ class IcuRulesGenerator(
                                 val key = locale.formattedDbKey()
                                 add("put(%T(%L)", KLocale::class.asTypeName(), key)
                                 if (addLocaleComments) {
-                                    add("/*%L*/", locale.languageRegion)
+                                    add("/*%L*/", locale.categoryComment())
                                 }
                                 addStatement(", %L)", privatePropertyTemplateName.format((index).toString().padStart(2, '0')))
                             }
