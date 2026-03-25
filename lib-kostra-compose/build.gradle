@@ -37,7 +37,17 @@ kotlin {
             }
         }
 
-        androidMain
+        jvmShared {
+            dependsOn(commonMain)
+        }
+
+        androidMain {
+            dependsOn(jvmShared)
+        }
+        jvmMain {
+            dependsOn(jvmShared)
+        }
+
         iosX64Main
         iosArm64Main
         iosSimulatorArm64Main
