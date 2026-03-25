@@ -18,10 +18,15 @@ open class StringDatabase(localeDatabases: Map<KLocale, String>) : Strings {
     }
 
     override fun get(key: StringResourceKey, qualifiers: KQualifiers): String {
-        //try locale+region if exists
-        return qualifiers.locale.takeIf { it.hasRegion() }?.let { getValue(key, qualifiers.locale) }
-            //try locale only
-            ?: qualifiers.locale.takeIf { it != KLocale.Undefined }?.let { getValue(key, qualifiers.locale.languageLocale()) }
+        val locale = qualifiers.locale
+        //try lang+script+region (exact)
+        return getValue(key, locale)
+            //try lang+script (strip region)
+            ?: locale.takeIf { it.hasRegion() }?.let { getValue(key, it.languageScriptLocale()) }
+            //try lang+region (strip script)
+            ?: locale.takeIf { it.hasScript() }?.let { getValue(key, it.languageRegionLocale()) }
+            //try lang only
+            ?: locale.takeIf { it != KLocale.Undefined }?.let { getValue(key, it.languageLocale()) }
             //fallback
             ?: getValue(key, KLocale.Undefined)
             ?: throw MissingResourceException(key, qualifiers, "string")

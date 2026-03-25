@@ -14,22 +14,30 @@ open class FileDatabase(database: String) : FileReferences {
     }
 
     protected open fun getValue(key: AssetResourceKey, qualifiers: KQualifiers): String? {
-        val dbKey = (key.key.toLong() shl Int.SIZE_BITS) or qualifiers.key.toLong()
-        return data.get(dbKey)
+        val dbKey = (key.key.toLong() shl KQualifiers.Bits) or qualifiers.key
+        return data[dbKey]
     }
 
     override fun get(key: AssetResourceKey, qualifiers: KQualifiers): String {
-        //langRegion[+dpi]
-        return qualifiers.locale.takeIf { it.hasRegion() }
-            ?.let { getValue(key, qualifiers) ?: getValue(key, qualifiers.withNoDpi()) }
-            //lang[+dpi]
-            ?: qualifiers.locale.takeIf { it != KLocale.Undefined }
-                ?.let { qualifiers.withNoLocaleRegion() }
-                ?.let { localeLang -> getValue(key, localeLang) ?: getValue(key, localeLang.withNoDpi()) }
+        val locale = qualifiers.locale
+        //lang+script+region[+dpi] (exact)
+        return getValue(key, qualifiers) ?: getValue(key, qualifiers.withNoDpi())
+            //lang+script[+dpi] (strip region)
+            ?: locale.takeIf { it.hasRegion() }
+                ?.let { qualifiers.withLocaleNoRegion() }
+                ?.let { q -> getValue(key, q) ?: getValue(key, q.withNoDpi()) }
+            //lang+region[+dpi] (strip script)
+            ?: locale.takeIf { it.hasScript() }
+                ?.let { qualifiers.withLocaleNoScript() }
+                ?.let { q -> getValue(key, q) ?: getValue(key, q.withNoDpi()) }
+            //lang[+dpi] (language only)
+            ?: locale.takeIf { it != KLocale.Undefined }
+                ?.let { qualifiers.withLocaleLanguageOnly() }
+                ?.let { q -> getValue(key, q) ?: getValue(key, q.withNoDpi()) }
             //just dpi
             ?: qualifiers.dpi.takeIf { it != KDpi.Undefined }?.let { getValue(key, KQualifiers(dpi = it)) }
             //just locale
-            ?: qualifiers.locale.takeIf { it != KLocale.Undefined }?.let { getValue(key, KQualifiers(locale = it)) }
+            ?: locale.takeIf { it != KLocale.Undefined }?.let { getValue(key, KQualifiers(locale = it)) }
             //fallback
             ?: getValue(key, KQualifiers.Undefined)
             ?: throw MissingResourceException(key, qualifiers, "file")

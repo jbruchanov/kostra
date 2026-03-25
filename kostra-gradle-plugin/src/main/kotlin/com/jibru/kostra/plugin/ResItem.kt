@@ -15,7 +15,7 @@ interface StringValueResItem {
 
 sealed class ResItem : Serializable {
     abstract val key: String
-    abstract val qualifiersKey: Int
+    abstract val qualifiersKey: Long
     abstract val group: String
 
     val distinctKey by lazy(LazyThreadSafetyMode.NONE) { Triple(key, qualifiersKey, group) }
@@ -33,7 +33,7 @@ sealed class ResItem : Serializable {
     data class StringRes(
         override val key: String,
         override val value: String,
-        override val qualifiersKey: Int,
+        override val qualifiersKey: Long,
     ) : ResItem(), StringValueResItem, Serializable {
         override val group: String get() = String
 
@@ -49,7 +49,7 @@ sealed class ResItem : Serializable {
     data class StringArray(
         override val key: String,
         val items: List<String>,
-        override val qualifiersKey: Int,
+        override val qualifiersKey: Long,
     ) : ResItem(), Serializable {
         override val group: String get() = StringArray
 
@@ -62,7 +62,7 @@ sealed class ResItem : Serializable {
         override val key: String,
         //indexes matching [Plural]
         val items: List<String?>,
-        override val qualifiersKey: Int,
+        override val qualifiersKey: Long,
     ) : ResItem(), Serializable {
         override val group: String get() = Plural
 
@@ -83,7 +83,7 @@ sealed class ResItem : Serializable {
     data class FileRes(
         override val key: String,
         val file: File,
-        override val qualifiersKey: Int,
+        override val qualifiersKey: Long,
         override val group: String,
         val root: File, // = file.parentFile.parentFile
         val image: Boolean = file.isImage(),

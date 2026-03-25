@@ -207,7 +207,7 @@ class ResourcesKtGenerator(
             } else {
                 add("%T(%L)", KLocale::class, it.formattedDbKey())
             }
-            val tag = if (it == KLocale.Undefined) "default" else it.languageRegion
+            val tag = if (it == KLocale.Undefined) "default" else it.tag
             addStatement(" to %S,", fileNameTemplate.format(tag))
         }
         unindent()

@@ -87,7 +87,7 @@ fun SampleScreen(extraContent: @Composable ColumnScope.() -> Unit = {}) = with(S
                 (listOf(defaultQualifiers.locale) + codes.map { KLocale(it) }).distinct()
             }
             var localeIndex by remember { mutableIntStateOf(0) }
-            val locale by remember { derivedStateOf { KLocale(locales[localeIndex].languageRegion) } }
+            val locale by remember { derivedStateOf { KLocale(locales[localeIndex].tag) } }
 
             val dpis = remember { listOf(null, KDpi.Undefined, KDpi.XHDPI, KDpi.XXHDPI) }
             var dpiIndex by remember { mutableIntStateOf(0) }

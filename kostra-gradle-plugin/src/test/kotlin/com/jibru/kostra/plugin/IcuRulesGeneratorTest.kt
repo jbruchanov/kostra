@@ -37,7 +37,7 @@ class IcuRulesGeneratorTest {
               )
             )}
             val PluralRuleSpecs: Map<KLocale, PluralRules> = buildMap(1) {
-              put(KLocale(5_14_00_00), pluralSpecs_01)
+              put(KLocale(1_558_592_627_247L), pluralSpecs_01)
             }
             """.trimIndent(),
         )
