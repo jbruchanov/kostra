@@ -41,8 +41,9 @@ abstract class AnalyseResourcesTask : DefaultTask() {
 
         val outputFile = outputFile.get().asFile
         outputFile.parentFile.mkdirs()
-        val writer = ObjectOutputStream(FileOutputStream(outputFile))
-        writer.writeObject(items)
+        ObjectOutputStream(FileOutputStream(outputFile)).use {
+            it.writeObject(items)
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -76,9 +77,12 @@ abstract class AnalyseResourcesTask : DefaultTask() {
                     "Missing default for keys: ${keys.joinToString { "'$it'" }}",
             )
         }
-        val missingKeys = keys.zip(defaults)
-            .filter { (_, value) -> value == null }
-            .map { (key, _) -> key }
+        check(keys.size == defaults.size) {
+            "Default/fallback $type database size mismatch: ${keys.size} keys but ${defaults.size} defaults"
+        }
+        val missingKeys = keys.indices
+            .filter { i -> defaults[i] == null }
+            .map { i -> keys[i] }
         if (missingKeys.isNotEmpty()) {
             throw IllegalStateException(
                 "Default/fallback $type database is missing values for keys: ${missingKeys.joinToString { "'$it'" }}\n" +
