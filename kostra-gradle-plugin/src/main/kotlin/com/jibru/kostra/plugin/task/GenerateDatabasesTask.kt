@@ -6,6 +6,7 @@ import com.jibru.kostra.plugin.KostraPluginConfig
 import com.jibru.kostra.plugin.ResItem
 import com.jibru.kostra.plugin.ResItemsProcessor
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -32,7 +33,7 @@ abstract class GenerateDatabasesTask : DefaultTask() {
     abstract val databaseDir: Property<String>
 
     @get:OutputDirectory
-    abstract val outputDir: Property<File>
+    abstract val outputDir: DirectoryProperty
 
     init {
         group = KostraPluginConfig.Tasks.Group
@@ -43,7 +44,7 @@ abstract class GenerateDatabasesTask : DefaultTask() {
         @Suppress("UNCHECKED_CAST")
         val items = ObjectInputStream(FileInputStream(resourcesAnalysisFile.get().asFile)).readObject() as List<ResItem>
         val processor = ResItemsProcessor(items)
-        val outDir = outputDir.get()
+        val outDir = outputDir.get().asFile
         val dbDir = databaseDir.orNull?.let { File(outDir, it) } ?: outDir
         outDir.deleteRecursively()
         dbDir.mkdirs()
