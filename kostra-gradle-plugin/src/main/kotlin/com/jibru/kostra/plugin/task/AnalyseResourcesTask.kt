@@ -13,10 +13,15 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 
+@DisableCachingByDefault(because = "Resource analysis depends on absolute directory contents and is fast to recompute")
 abstract class AnalyseResourcesTask : DefaultTask() {
     @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val resourceDirs: ListProperty<File>
 
     @get:OutputFile

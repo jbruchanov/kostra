@@ -2,7 +2,7 @@ plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
 }
 
 apply from: "$rootProject.projectDir/build-ktlint.gradle"
@@ -18,8 +18,8 @@ kotlin {
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    androidTarget {
-        publishLibraryVariants("release")
+    android {
+        namespace = "com.jibru.kostra.compose"
     }
     applyDefaultHierarchyTemplate()
     sourceSets {
@@ -57,8 +57,4 @@ kotlin {
         iosSimulatorArm64Test
         iosTest
     }
-}
-
-android {
-    namespace = "com.jibru.kostra.compose"
 }

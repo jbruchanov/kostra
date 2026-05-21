@@ -33,7 +33,6 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.AbstractExecutable
@@ -146,7 +145,7 @@ class KostraPlugin : Plugin<Project> {
             ?.let { it as? KotlinNativeTarget }
             ?.binaries
             ?.filterIsInstance<AbstractExecutable>()
-            ?.map { it.name.capitalized() to it.outputDirectory }
+            ?.map { it.name.replaceFirstChar { c -> c.uppercase() } to it.outputDirectory }
             ?.onEach { (name, outputDir) ->
                 //copy predefined resources
                 project.tasks.register(KostraPluginConfig.Tasks.CopyResourcesForNativeTemplate_xy.format("Resources", name), Copy::class.java) {

@@ -13,6 +13,7 @@ unittest-android = ["androidx-arch-core-testing"]
 
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
 android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "android-gradle-plugin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
 gradle-jvmapp = { id = "org.gradle.application" }
 gradle-plugin = { id = "org.gradle.java-gradle-plugin", version.ref = "gradle-plugin" }
@@ -41,7 +42,7 @@ android-sdk-target = "36"
 
 kotlin = "2.3.0"
 jvmtarget = "21"
-android-gradle-plugin = "8.13.2"
+android-gradle-plugin = "9.2.0"
 androidx-activity-compose = "1.11.0"
 androidx-app-compat = "1.7.1"
 androidx-arch-core-testing = "2.2.0"
