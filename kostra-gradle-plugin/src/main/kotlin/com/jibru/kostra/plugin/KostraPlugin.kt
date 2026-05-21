@@ -3,9 +3,9 @@
 
 package com.jibru.kostra.plugin
 
-import com.android.build.gradle.AppExtension
-import com.android.build.gradle.LibraryExtension
-import com.android.build.gradle.internal.tasks.factory.dependsOn
+import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.variant.AndroidComponentsExtension
 import com.jibru.kostra.plugin.KostraPluginConfig.defaultOutputDir
 import com.jibru.kostra.plugin.KostraPluginConfig.fileWatcherLog
 import com.jibru.kostra.plugin.KostraPluginConfig.outputSourceDir
@@ -76,13 +76,13 @@ class KostraPlugin : Plugin<Project> {
         val generateResourcesDefaultsTaskProvider = createGenerateDefaultsTask(
             project = target,
             extension = extension,
-        ).apply { dependsOn(generateResourcesTaskProvider) }
+        ).apply { configure { it.dependsOn(generateResourcesTaskProvider) } }
 
         val generateDbsTaskTaskProvider = target.tasks
             .register(KostraPluginConfig.Tasks.GenerateDatabases, GenerateDatabasesTask::class.java) {
                 it.resourcesAnalysisFile.set(analyseResourcesTaskProvider.flatMap { v -> v.outputFile })
                 it.databaseDir.set(extension.outputDatabaseDirName)
-                it.outputDir.set(target.outputResourcesDir())
+                it.outputDir.fileValue(target.outputResourcesDir())
                 it.dependsOn(analyseResourcesTaskProvider)
             }
 
@@ -241,35 +241,27 @@ class KostraPlugin : Plugin<Project> {
         //android plugin doesn't seem to be taking stuff from KMP common, mostlikely because "jvm resources" are not same as "android res" resources
         run Android@{
             val sourceSets = project.extensions.findByType(LibraryExtension::class.java)?.sourceSets
-                ?: project.extensions.findByType(AppExtension::class.java)?.sourceSets
+                ?: project.extensions.findByType(ApplicationExtension::class.java)?.sourceSets
 
-            (sourceSets ?: return@Android)
-                .findByName("main")
+            sourceSets
+                ?.findByName("main")
                 ?.resources
-                .let { resources ->
-                    if (resources == null) {
-                        logger.warn("Kostra: ${project.name}:main resources found, unable to finish auto setup!")
-                        return@let
-                    }
+                ?.let { resources ->
                     //add kostra resources part of android resources (not res <- android resources, just "jar" resources)
                     //we don't want androidResources.resourceDirs here, those are parsed and converted into own db
-                    resources.srcDir(extension.resourceDirs.get())
-                    resources.srcDir(generateDbsTaskProvider)
+                    resources.directories.addAll(extension.resourceDirs.get().map { it.absolutePath })
                 }
-            /*
-                previous only
-                resources.srcDir(generateDbsTaskProvider)
-                didn't work, for simply assembleDebug, it didn't have the generateDatabases tasks part of the pipeline.
-                It was also causing this in other project, not in the sample app project
-                https://github.com/JetBrains/compose-multiplatform/issues/3850
-                Hooking up the generateDbsTaskProvider also to variants processJavaResourcesProvider seems to be solving both issues.
-             */
-            val variants = project.extensions.findByType(LibraryExtension::class.java)?.libraryVariants
-                ?: project.extensions.findByType(AppExtension::class.java)?.applicationVariants
 
-            variants?.forEach {
-                it.processJavaResourcesProvider.dependsOn(generateDbsTaskProvider)
-            }
+            //Replaces the previous variants.processJavaResourcesProvider.dependsOn(...) hack.
+            //addGeneratedSourceDirectory both registers the directory and wires processJavaResources
+            //to depend on the generating task, fixing KS-02 cleanly with the new Variant API.
+            project.extensions.findByType(AndroidComponentsExtension::class.java)
+                ?.onVariants { variant ->
+                    variant.sources.resources?.addGeneratedSourceDirectory(
+                        generateDbsTaskProvider,
+                        GenerateDatabasesTask::outputDir,
+                    )
+                }
         }
     }
 
