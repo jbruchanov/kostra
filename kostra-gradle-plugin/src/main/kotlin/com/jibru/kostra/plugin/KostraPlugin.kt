@@ -114,6 +114,16 @@ class KostraPlugin : Plugin<Project> {
             painterExtensions.set(FileResolverConfig.Defaults.imageExtensions)
         }
 
+        //AndroidComponentsExtension.onVariants must be registered before AGP fires its variant callbacks;
+        //if we wait until afterEvaluate, AGP has already executed them.
+        target.extensions.findByType(AndroidComponentsExtension::class.java)
+            ?.onVariants { variant ->
+                variant.sources.resources?.addGeneratedSourceDirectory(
+                    generateDbsTaskTaskProvider,
+                    GenerateDatabasesTask::outputDir,
+                )
+            }
+
         target.afterEvaluate { project ->
             if (extension.autoConfig.get()) {
                 tryUpdateSourceSets(
@@ -239,6 +249,8 @@ class KostraPlugin : Plugin<Project> {
         }
 
         //android plugin doesn't seem to be taking stuff from KMP common, mostlikely because "jvm resources" are not same as "android res" resources
+        //The variant-level wiring (generated DBs -> processAndroidMainJavaRes) is registered at
+        //plugin-apply time via androidComponents.onVariants — see KostraPlugin.apply().
         run Android@{
             val sourceSets = project.extensions.findByType(LibraryExtension::class.java)?.sourceSets
                 ?: project.extensions.findByType(ApplicationExtension::class.java)?.sourceSets
@@ -250,17 +262,6 @@ class KostraPlugin : Plugin<Project> {
                     //add kostra resources part of android resources (not res <- android resources, just "jar" resources)
                     //we don't want androidResources.resourceDirs here, those are parsed and converted into own db
                     resources.directories.addAll(extension.resourceDirs.get().map { it.absolutePath })
-                }
-
-            //Replaces the previous variants.processJavaResourcesProvider.dependsOn(...) hack.
-            //addGeneratedSourceDirectory both registers the directory and wires processJavaResources
-            //to depend on the generating task, fixing KS-02 cleanly with the new Variant API.
-            project.extensions.findByType(AndroidComponentsExtension::class.java)
-                ?.onVariants { variant ->
-                    variant.sources.resources?.addGeneratedSourceDirectory(
-                        generateDbsTaskProvider,
-                        GenerateDatabasesTask::outputDir,
-                    )
                 }
         }
     }
