@@ -1,39 +1,18 @@
 kotlin {
-    androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = libs.versions.jvmtarget.get()
-            }
-        }
+    android {
+        compileSdk = libs.versions.android.sdk.compile.get().toInteger()
+        minSdk = libs.versions.android.sdk.min.get().toInteger()
+
+        withHostTestBuilder {}
     }
 
+    jvmToolchain(libs.versions.jvmtarget.get().toInteger())
+
     sourceSets {
-        androidUnitTest {
+        getByName("androidHostTest") {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-    }
-}
-
-android {
-    compileSdk = libs.versions.android.sdk.compile.get().toInteger()
-    defaultConfig {
-        minSdk = libs.versions.android.sdk.min.get().toInteger()
-        targetSdk = libs.versions.android.sdk.target.get().toInteger()
-    }
-
-    compileOptions {
-        sourceCompatibility = libs.versions.jvmtarget.get()
-        targetCompatibility = libs.versions.jvmtarget.get()
-    }
-    kotlin {
-        jvmToolchain(libs.versions.jvmtarget.get().toInteger())
-    }
-
-    buildFeatures {
-        //taken care of by multiplatform, otherwise is using android compose which
-        //seems to be working, but conflicting with versions
-        compose = false
     }
 }

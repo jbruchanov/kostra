@@ -9,8 +9,10 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import java.io.File
 
+@DisableCachingByDefault(because = "Defaults generation is fast and inputs are simple properties")
 abstract class GenerateDefaultsTask : DefaultTask() {
 
     @get:Input

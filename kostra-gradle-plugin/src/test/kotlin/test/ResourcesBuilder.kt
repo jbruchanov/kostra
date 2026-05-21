@@ -1,7 +1,21 @@
 package test
 
-import org.gradle.internal.impldep.org.apache.commons.lang.StringEscapeUtils
 import java.io.File
+
+private object StringEscapeUtils {
+    fun escapeXml(value: String): String = buildString(value.length) {
+        value.forEach { ch ->
+            when (ch) {
+                '&' -> append("&amp;")
+                '<' -> append("&lt;")
+                '>' -> append("&gt;")
+                '"' -> append("&quot;")
+                '\'' -> append("&apos;")
+                else -> append(ch)
+            }
+        }
+    }
+}
 
 private val DefaultLocation = "build/resources-test"
 
