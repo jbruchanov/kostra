@@ -22,6 +22,7 @@ dependencies {
 
     testImplementation(libs.bundles.unittest.jvm)
     testImplementation(libs.truth)
+    testImplementation(gradleTestKit())
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
@@ -47,6 +48,13 @@ gradlePlugin {
             implementationClass = "com.jibru.kostra.plugin.KostraPlugin"
         }
     }
+}
+
+tasks.named("test") {
+    //integration tests scaffold a synthetic KMP+Android project that depends on
+    //com.jibru.kostra:kostra-common via mavenLocal; ensure it's published first.
+    dependsOn(":kostra-common:publishToMavenLocal")
+    systemProperty("kostra.test.version", project.version)
 }
 
 // https://docs.gradle.org/current/dsl/org.gradle.api.tasks.JavaExec.html#org.gradle.api.tasks.JavaExec
