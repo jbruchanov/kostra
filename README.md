@@ -4,14 +4,14 @@
 
 A library trying to help with resources in [KMP](https://blog.jetbrains.com/kotlin/2023/07/update-on-the-name-of-kotlin-multiplatform/)
 project, currently supported platforms are `JVM`, `Android`, `iOS`, and experimentally `Native`.
-Kostra is basically trying to do same what Android does with resources. It generates an object having references to actual resources for easy
-usage using autocomplete and having also compile time validation that reference itself exists.
+Kostra is basically trying to do the same as Android does with resources. It generates an object having references to actual resources for easy
+usage via autocomplete and provides compile-time validation that the reference itself exists.
 
 There are 4 basic categories *strings, plurals, painters, binaries*. *Strings/Plurals* are supported via
-[Android Strings](https://developer.android.com/guide/topics/resources/string-resource). *Painters* are equivalent of Android drawables, aka anything what can be drawn/painted.
-*Binaries* is the group for anything else what can be loaded as simple raw data.
-All 4 categories have own resource key types ([value class](https://kotlinlang.org/docs/inline-classes.html))
-`StringResourceKey`, `PluralResourceKey`, `PainterResourceKey`, `BinaryResourceKey` to get immediate compile time error when resources misused.
+[Android Strings](https://developer.android.com/guide/topics/resources/string-resource). *Painters* are equivalent of Android drawables, aka anything that can be drawn/painted.
+*Binaries* is the group for anything else that can be loaded as simple raw data.
+All 4 categories have their own resource key types ([value class](https://kotlinlang.org/docs/inline-classes.html))
+`StringResourceKey`, `PluralResourceKey`, `PainterResourceKey`, `BinaryResourceKey` to get an immediate compile-time error when resources are misused.
 
 ```mermaid
 classDiagram
@@ -34,7 +34,7 @@ classDiagram
 
 Kostra is converting string XML files into own DB like structure to avoid any extra processing during runtime. For this particular reason, the XML files are unnecessary in
 runtime and doesn't have to be included as part of your project resources which are bundled as part of a release product. <br/> See
-[Kostra Plugin Config](https://github.com/jbruchanov/kostra/develop/README.md#gradle-plugin) how to include string XMLs for kostra processing, without having them included
+[Kostra Plugin Config](https://github.com/jbruchanov/kostra/blob/develop/README.md#gradle-plugin) how to include string XMLs for kostra processing, without having them included
 into a release product. The strings DB has `O(1)` access time, the painters/binaries DB has `O(log(n))` access time.
 
 #### Strings
@@ -44,30 +44,31 @@ See [limitations](https://github.com/jbruchanov/kostra?tab=readme-ov-file#limita
 
 #### Plurals/Ordinals
 
-Similarly like for strings, just follow [Android Strings](https://developer.android.com/guide/topics/resources/string-resource) rules. The library has own support for plurals &
-ordinals generated via [CLDR](https://cldr.unicode.org/) rules similarly what is being used in Android/iOS.
+Similar to strings, just follow [Android Strings](https://developer.android.com/guide/topics/resources/string-resource) rules. The library has its own support for plurals &
+ordinals generated via [CLDR](https://cldr.unicode.org/) rules, similar to what is used in Android/iOS.
 
 To update to the latest CLDR rules, run `./gradlew kostra-gradle-plugin:generateRuleSpecsForKostraCommonLib`
 
 #### Painters
 
-In general, this is special case of binary resource for better safety support of compose `painterResourse` function. You will get what your platform supports.
+In general, this is a special case of binary resource for better safety support of compose `painterResource` function. You will get what your platform supports.
 [Common](https://github.com/jbruchanov/kostra/blob/develop/kostra-gradle-plugin/src/main/kotlin/com/jibru/kostra/plugin/KostraPluginConfig.kt#L16)
-image formats like jpgs or pngs are marked with `PainterResourceKey`. KMP Compose supports also
+image formats like jpgs or pngs are marked with `PainterResourceKey`. KMP Compose also supports
 [VectorDrawables](https://developer.android.com/develop/ui/views/graphics/vector-drawable-resources),
-which is sort of SVG with limited subset of features. Due to the separation of painter vs binary resource key as both files are `.xml`. Simply use `.vxml` file
-extension for those, or tweak `kostra.painterGroups` in [Kostra Plugin Config](https://github.com/jbruchanov/kostra/develop/README.md#gradle-plugin).
+which is a sort of SVG with a limited subset of features. Since both regular Android XML resources and VectorDrawables share the `.xml` extension, kostra
+needs a way to tell them apart for the painter vs binary resource key split. Simply use the `.vxml` file
+extension for VectorDrawables, or tweak `kostra.painterGroups` in [Kostra Plugin Config](https://github.com/jbruchanov/kostra/blob/develop/README.md#gradle-plugin).
 <br/>
 *SVG format is supported only on desktop JVM (not Android), even if they are marked with PainterResourceKey*
 
 #### Binaries
 
-Not much to add here. Simply anything what can be read as raw data.
+Not much to add here. Simply anything that can be read as raw data.
 
 ## Qualifiers
 
-Qualifiers are definable per file/folder seperated by a dash. Similarly like [Android](https://developer.android.com/guide/topics/resources/providing-resources#QualifierRules) uses
-them. The library supports only 2 type of qualifiers.
+Qualifiers are definable per file/folder, separated by a dash. Similar to how [Android](https://developer.android.com/guide/topics/resources/providing-resources#QualifierRules) uses
+them. The library supports only 2 types of qualifiers.
 [DPI](https://github.com/jbruchanov/kostra/blob/develop/lib-kostra-common/src/commonMain/kotlin/com/jibru/kostra/KDpi.kt) &
 [Locale](https://github.com/jbruchanov/kostra/blob/develop/lib-kostra-common/src/commonMain/kotlin/com/jibru/kostra/KLocale.kt).
 Locale supports up to 3 components:
@@ -75,7 +76,7 @@ Locale supports up to 3 components:
 | Component | Length | Description | Examples |
 |---|---|---|---|
 | Language | 2-3 chars | [ISO 639](http://www.loc.gov/standards/iso639-2/php/code_list.php) language code | `en`, `cs`, `ars` |
-| Region | 2-3 chars | [ISO 3166-1-alpha-2](https://www.loc.gov/standards/iso639-2/php/code_list.php) region code, preceded by lowercase `r` in dash format | `rUS`, `rGB`, `rCN` |
+| Region | 2-3 chars | [ISO 3166-1 alpha-2](https://www.iso.org/iso-3166-country-codes.html) region code, preceded by lowercase `r` in dash format | `rUS`, `rGB`, `rCN` |
 | Script | 2-4 chars | [ISO 15924](https://unicode.org/iso15924/iso15924-codes.html) script code (typically 4 chars) | `Hans`, `Hant`, `Latn` |
 
 General format: `<group>-<qualifier>/**/<resources_key>-<qualifier>`
@@ -92,20 +93,20 @@ Examples: `b+zh+Hant`, `b+zh+Hans+CN`, `b+en+US`
 
 Both formats produce the same result: `strings-zh-Hans.xml` and `strings-b+zh+Hans.xml` resolve identically.
 
-DPI is defined as a set of `nodpi`, `ldpi`, `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`, `tvdpi` values in same way what
-[Android](https://developer.android.com/guide/topics/resources/providing-resources#AlternativeResources) is using.
+DPI is defined as a set of `nodpi`, `ldpi`, `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`, `tvdpi` values in the same way
+[Android](https://developer.android.com/guide/topics/resources/providing-resources#AlternativeResources) uses them.
 
-- order of qualifiers don't matter.
-- a dash `-` is qualifier divider, so key is defined by filename upto first `-` found.
-- file/folder structure is quite open to anything valid by OS filesystem  (or what can be translated into kotlin code). Unlike Android, deeper folder structure is allowed.
-- `group` is optional, if undefined given the file saved directly in "resources" folder directly, they will be put into `root` group.
-- any non-easily translatable names to kotlin property will be escaped using backticks, for example ``` K.image.`1` ```.
-- files with empty key are ignored, e.g. `".DS_STORE"`, on the other hand file `" .xml"` is valid and accessible via ``` K.root.` ` ```.
-- if `kostra.strictLocale = false` locale can be anything `[a-Z]{2,4}` per segment (language 2-3, region 2-3, script 2-4), otherwise must be known combination for `java.util.Locale`.
+- order of qualifiers doesn't matter.
+- a dash `-` is the qualifier divider, so the key is defined by the filename up to the first `-` found.
+- file/folder structure is quite open to anything valid by the OS filesystem (or what can be translated into kotlin code). Unlike Android, a deeper folder structure is allowed.
+- `group` is optional; if undefined, files saved directly in the "resources" folder are put into the `root` group.
+- any names not easily translatable to a kotlin property will be escaped using backticks, for example ``` K.image.`1` ```.
+- files with an empty key are ignored, e.g. `".DS_STORE"`; on the other hand, file `" .xml"` is valid and accessible via ``` K.root.` ` ```.
+- if `kostra.strictLocale = false`, a locale can be anything matching `[a-Z]{2,4}` per segment (language 2-3, region 2-3, script 2-4); otherwise it must be a known combination for `java.util.Locale`.
 - DPI qualifier is ignored for strings!
-- device DPI must match exactly the DPI qualifier, otherwise goes directly for a default/fallback value. There is currently no
+- device DPI must match the DPI qualifier exactly; otherwise it falls back directly to the default value. There is currently no
   [BestMatch](https://developer.android.com/guide/topics/resources/providing-resources#BestMatch) like Android has. (`XXHDPI` device takes `XXHDPI` orElse `Default` only)
-- Duplicated **key with same qualifiers** records are ignored and only 1 is taken, it's upto developer to prevent this!
+- Duplicate records with the **same key and same qualifiers** are ignored and only one is taken; it's up to the developer to prevent this!
 
 Few examples:
 
@@ -208,8 +209,8 @@ kotlin {
 }
 ```
 
-Add the plugin to your project and let gradle sync. It's going to scan the project registered resource folders and will generate `K` object
-(similarly like Android `R` class).
+Add the plugin to your project and let gradle sync. It's going to scan the project's registered resource folders and will generate the `K` object
+(similar to Android's `R` class).
 
 ## Usage
 
@@ -237,8 +238,8 @@ kostra {
     interfaces /*Boolean*/
     // mark all the generated code as internal to avoid leaking outside a module
     internalVisibility /*Boolean*/
-    // full package name of generated K class, by default 'app.K`,
-    // `kClassName' from gradle.kts, 'KClassName' from .gradle 🙄
+    // full package name of generated K class, by default `app.K`,
+    // `kClassName` from gradle.kts, `KClassName` from .gradle 🙄
     kClassName /*String*/
     // Add a unique prefix in multi module setup to avoid resource file conflicts
     modulePrefix /*String*/
@@ -349,9 +350,9 @@ println(app.Resources.string.get(key, qualifiers))
 #### Defaults
 
 Any mentioning of **defaults**, it's meant a set of following functions to work more easily with kostra resources. They are not part of kostra-common library.
-The defaults are created based on `kostra.resourcesDefaults` and referencing created `Resources` object. In your project/module you should prefer using defaults
-(or define your own similar structure what helps your use case) to prevent any misuse of `KQualifiers` origin and resource keys/dbs in a multi module setup.<br/>
-Based on your current use case, you can have generated from `None`, to `All`. Signature is same for default & compose, annotated using `@Composable` if necessary.
+The defaults are created based on `kostra.resourcesDefaults` and reference the created `Resources` object. In your project/module you should prefer using defaults
+(or define your own similar structure that helps your use case) to prevent any misuse of `KQualifiers` origin and resource keys/dbs in a multi module setup.<br/>
+Based on your current use case, you can have generated from `None` to `All`. The signature is the same for default & compose, annotated using `@Composable` if necessary.
 
 ```kotlin
 //common
@@ -374,9 +375,9 @@ fun PluralResourceKey.getOrdinal(quantity: IFixedDecimal, vararg formatArgs: Any
 fun PluralResourceKey.getOrdinal(quantity: Int, vararg formatArgs: Any): String
 fun StringResourceKey.get(vararg formatArgs: Any): String
 
-//explict getters
+//explicit getters
 //same as getters with explicit qualifiers: KQualifiers argument
-//useful in case of  in remember { buildAnnotatedString { ... }}
+//useful in case of usage in remember { buildAnnotatedString { ... }}
 fun StringResourceKey.get(qualifiers: KQualifiers, vararg formatArgs: Any): String
 
 //and extra compose defaults
@@ -387,8 +388,8 @@ fun PainterResourceKey.get(): Painter
 `FixedDecimal` is a custom numeric type specifically for working with plurals. TODO() kdoc?
 See more details [here](https://unicode-org.github.io/icu-docs/apidoc/released/icu4j/com/ibm/icu/text/PluralRules.FixedDecimal.html).
 
-Be careful of potentially 2 different sources of truth `DefaultQualifiersProvider` vs `LocalQualifiers`.
-`LocalQualifiers` is a compose world which can be overriden anywhere in your compose tree.
+Be careful of potentially 2 different sources of truth: `DefaultQualifiersProvider` vs `LocalQualifiers`.
+`LocalQualifiers` is the compose-world equivalent and can be overridden anywhere in your compose tree.
 
 **Always pass `KQualifiers` provided from `LocalQualifiers.current` in compose app**
 
@@ -479,8 +480,8 @@ It will be just `Add` and `@string/add` as values.
 
 Similarly, having e.g. `@android:color/white` in VectorDrawable XML won't work and will crash most likely with cryptic error message.
 
-Processing of texts is slightly different, android is preprocessing strings so for example `\n` is interpreted as new-line character etc. Kostra takes the text as is in XML, which
-might be slightly annoying in same cases. Therefore, there are two extra attributes `trimMargin` and `trimIndent` which are being used in resources processor.
+Processing of texts is slightly different — Android preprocesses strings so for example `\n` is interpreted as a new-line character. Kostra takes the text as-is from XML, which
+might be slightly annoying in some cases. Therefore, there are two extra attributes `trimMargin` and `trimIndent` which are honored by the resources processor.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -488,7 +489,7 @@ might be slightly annoying in same cases. Therefore, there are two extra attribu
     <string name="text1">
         Text1
     </string>
-    <string name="text2" marginIndent="true">
+    <string name="text2" trimIndent="true">
         Text2Row1
         Text2Row2
     </string>
@@ -511,8 +512,8 @@ might be slightly annoying in same cases. Therefore, there are two extra attribu
 </resources>
 ```
 
-Kostra takes the text as it's coming from XmlParser, so text for `text1` looks like this `|\n        Sample\n    |`. Due to this reason, kostra introduced `trimMargin`
-and `trimIndent` attributes which are calling kotlin variant of these methods on the string.
+Kostra takes the text as it's coming from XmlParser, so the text for `text1` looks like this `|\n        Text1\n    |`. For this reason, kostra introduced the `trimMargin`
+and `trimIndent` attributes, which call the kotlin variants of these methods on the string.
 
 
 #### Android Resources BestMatch
@@ -546,10 +547,10 @@ The build will fail if any key is missing a default value, since it serves as th
 
 #### Strings formatting
 
-There is no support for any advanced stuff like html markups etc, strings are taken and provided exactly as they are in XML.
-Kostra has also own implementation for string formatting as there is currently no KMP implementation. Given the complexity of
-common [String formatting](https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html).
-Only `%s`is [supported](https://github.com/jbruchanov/kostra/blob/develop/lib-kostra-common/src/jvmTest/kotlin/com/jibru/text/StringFormatKtTest.kt).
+There is no support for any advanced stuff like HTML markup etc.; strings are taken and provided exactly as they are in XML.
+Kostra also has its own implementation of string formatting, since there is currently no KMP implementation.
+Given the complexity of common [String formatting](https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html),
+only `%s` is [supported](https://github.com/jbruchanov/kostra/blob/develop/lib-kostra-common/src/jvmTest/kotlin/com/jibru/text/StringFormatKtTest.kt).
 <br /> Few examples:
 
 ```kotlin
@@ -566,12 +567,12 @@ sFormat("%1\$s %2\$S %2\$s %1\$S", "a", "b") // "a B b A"
 
 #### SVG Support
 
-SVG support is only for **JVM Desktop**. Compose for Android or iOS has no support for SVGs. Kostra itself has nothing to do with it.
-SVG files are always marked with PainterResourceKey as they are images no matter platform you use.
+SVG support is only for **JVM Desktop**. Neither Compose for Android nor Compose for iOS has support for SVGs. Kostra itself has nothing to do with it.
+SVG files are always marked with `PainterResourceKey` as they are images no matter which platform you use.
 
 #### Multi Module setup
 
-Multi Module setup is slightly annoying due to no support for of general resources merging in [KMP iOS part](https://github.com/JetBrains/compose-multiplatform/issues/3391).
+Multi Module setup is slightly annoying due to no support for general resources merging in the [KMP iOS part](https://github.com/JetBrains/compose-multiplatform/issues/3391).
 Have a look [sample project](https://github.com/jbruchanov/kostra/tree/develop/sample), there is an example with a workaround.
 
 #### Native variant
@@ -581,11 +582,11 @@ It works, but the native variant is just a proof of concept at this moment as th
 and for "production" look like. <br/>
 
 *(If you are trying to run it, be sure you run the release product from console. There seems to be no way to set working directory for the app started
-from jIDEA, so it's crashing with "resources not found" exception)*
+from IDE, so it's crashing with "resources not found" exception)*
 
 #### FileWatcher
 
-Kostra Gradle Plugin has implemented FileWatcher (`kostra.useFileWatcher`) to update `K` object whenever resources changed. Unfortunately jIDEA doesn't
+Kostra Gradle Plugin has implemented FileWatcher (`kostra.useFileWatcher`) to update `K` object whenever resources changed. Unfortunately IDE doesn't
 update indexes based on that, so the changes are not visible until refreshed. For this reason it's disabled by default as there is no good UX.
 
 ## License
