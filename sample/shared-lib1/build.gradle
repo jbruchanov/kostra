@@ -17,7 +17,6 @@ kotlin {
     android {
         namespace = "com.sample.lib1"
     }
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 

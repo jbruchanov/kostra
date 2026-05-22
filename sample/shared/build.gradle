@@ -33,7 +33,6 @@ kotlin {
         }
     }
 
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 
@@ -62,15 +61,7 @@ kotlin {
         jvmMain
         androidMain
 
-        iosX64Main
-        iosArm64Main
-        iosSimulatorArm64Main
-
         iosMain {
-            iosX64Main.dependsOn(delegate)
-            iosArm64Main.dependsOn(delegate)
-            iosSimulatorArm64Main.dependsOn(delegate)
-
             sourceSets {
                 //add explicit reference to use module resources + kostra resources as part of this build
                 //output in kostra/sample/build/ios/Debug-iphonesimulator/appIos.app/compose-resources/
@@ -89,10 +80,6 @@ kotlin {
             }
         }
 
-        iosX64Test
-        iosArm64Test
-        iosSimulatorArm64Test
-        iosTest
     }
 }
 

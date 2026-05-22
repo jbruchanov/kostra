@@ -8,7 +8,6 @@ apply from: "$rootProject.projectDir/../build-ktlint.gradle"
 kotlin {
     jvm()
 
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 

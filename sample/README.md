@@ -158,6 +158,39 @@ solved in kotlin*
 In case of isolated module, everything kostra generated can be marked with `internal` visibility accessor. Just use
 `kostra.internalVisibility = true`. All DBs must be part of the final release product and they will be still accessible like any other bundled resource.
 
+#### iOS App — Signing Setup
+
+The iOS Xcode project does **not** commit signing details. Each developer drops their own
+team ID and bundle ID into a gitignored `Local.xcconfig` so the sample stays portable.
+
+First-time setup:
+```shell
+cd sample/appIos
+cp Local.xcconfig.template Local.xcconfig
+# edit Local.xcconfig — set TEAM_ID to your Apple Developer team ID
+#                     and BUNDLE_ID to a unique reverse-DNS string under your team
+pod install
+```
+
+How it's wired:
+- [`appIos.xcodeproj/project.pbxproj`](appIos/appIos.xcodeproj/project.pbxproj) references
+  `${TEAM_ID}` and `${BUNDLE_ID}` instead of literal values.
+- [`Podfile`](appIos/Podfile)'s `post_install` hook injects
+  `#include? "../../../Local.xcconfig"` into the generated `Pods-appIos.*.xcconfig` files,
+  so `Local.xcconfig` values flow through the Pods xcconfig chain into the app target.
+- Without `Local.xcconfig` the build fails with a clean *"Signing requires a development team"*
+  error — that's expected; create the file and re-run `pod install`.
+
+Why this layout — Apple team IDs aren't strictly secret, but committing them ties the sample
+to one developer's account and breaks the build for everyone else. `Local.xcconfig` keeps
+the project clonable while letting each contributor sign with their own team.
+
+Building for Apple-Silicon-only? The project sets
+`EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` because the shared module only declares
+`iosArm64()` and `iosSimulatorArm64()` Kotlin targets. Add `iosX64()` back to the relevant
+`build.gradle` files and remove the `EXCLUDED_ARCHS` setting (from the project and from
+`Podfile`'s `post_install`) if you need Intel-Mac simulator support.
+
 #### IOS
 KMP for iOS is currently the painful part. [KMP doesn't support any resource merging](https://github.com/JetBrains/compose-multiplatform/issues/3391) on any level.
 It must be done manually, for example [this way](https://github.com/jbruchanov/kostra/blob/KS-70_docs/sample/build.gradle).
