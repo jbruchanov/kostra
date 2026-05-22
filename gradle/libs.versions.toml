@@ -35,6 +35,7 @@ gradle-publish = "2.1.1"
 kotlinpoet = "2.3.0"
 kotlinx-dateTime = "0.7.1"
 kotlinx-coroutines = "1.11.0"
+kotlinx-serialisation = "1.9.0"
 jetbrains-compose-ui = "1.11.0"
 icu = "78.3"
 junit = "5.14.4"
@@ -63,6 +64,7 @@ kotlin-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlin-reflection = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-dateTime" }
 kotlinx-coroutines-jdk = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8", version.ref = "kotlinx-coroutines" }
+kotlinx-serialisation-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialisation" }
 ktlintrules-compose = { module = "io.nlopez.compose.rules:ktlint", version.ref = "ktlintrules-compose" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 jetbrains-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
