@@ -25,6 +25,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(libs.bundles.unittest.jvm)
+                runtimeOnly(libs.junit.platform.launcher)
             }
         }
     }

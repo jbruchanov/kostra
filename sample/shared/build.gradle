@@ -2,7 +2,7 @@ import com.jibru.kostra.plugin.ResourcesDefaults
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.native.cocoapods")
@@ -16,6 +16,9 @@ def depModules = [project(":shared-lib1"), project(":shared-lib2")]
 
 kotlin {
     jvm()
+    android {
+        namespace = "com.jibru.kostra.appsample"
+    }
     cocoapods {
         version = "1.0.0"
         summary = "Some description for the Shared Module"
@@ -58,7 +61,6 @@ kotlin {
 
         jvmMain
         androidMain
-        androidUnitTest
 
         iosX64Main
         iosArm64Main
@@ -107,9 +109,6 @@ kostra {
     }
 }
 
-android {
-    namespace = "com.jibru.kostra.appsample"
-}
 
 //just ensure that lib DBs are created with 'shared' module DB
 tasks.getByName("generateDatabases")
