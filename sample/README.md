@@ -17,8 +17,8 @@ flowchart BT
 ## Internals
 
 #### ResourceKey types
-Kostra has multiple `ResourceKey` types to use typing system to its advance. Following class diagram represents interfaces coming from `kostra-common`.
-KGP generates same structure in each module when used to have strong binding between `K` object references and generated defaults.
+Kostra has multiple `ResourceKey` types to use the typing system to its advantage. The following class diagram represents interfaces coming from `kostra-common`.
+KGP generates the same structure in each module to have strong binding between `K` object references and generated defaults.
 
 ```mermaid
 classDiagram
@@ -58,12 +58,12 @@ object KLib2 {
   }
 }
 ```
-All `ResourceKey` value classes are generated into `kClassName` package to avoid mistake like
-`Lib1Resource.string.get(KLib2.string.textSimple)`. This code looks valid, but it's semantically incorrect, because `Lib1Resources1` are
-being used with `KLib2` object.
+All `ResourceKey` value classes are generated into the `kClassName` package to avoid mistakes like
+`Lib1Resource.string.get(KLib2.string.textSimple)`. This code looks valid, but it's semantically incorrect, because `Lib1Resources` are
+being used with the `KLib2` object.
 
-What is important is the `key` aka DB index, which might work if the key exists in other database. Obviously the output would be wrong. Generated defaults
-are preventing this due to typing system.
+What is important is the `key` aka DB index, which might work if the key exists in the other database. Obviously the output would be wrong. Generated defaults
+prevent this via the typing system.
 ```kotlin
 //compile time error
 com.sample.lib1.stringResource(KLib2.string.textSimple)
@@ -71,15 +71,15 @@ com.sample.lib1.stringResource(KLib2.string.textSimple)
 //using Raw API compiles fine and will return wrong value or might lead to crash if DB key undefined
 Lib1Resource.string.get(KLib2.string.textSimple)
 ```
-Signature looks like this `com.sample.lib1.stringResource(key: com.sample.lib1.StringResourceKey) : String` and
-`KLib2.string.textSimple` is type of `com.sample.lib2.StringResourceKey`. Same simple name, different package though. Compiler will let you know
+Signature looks like this `com.sample.lib1.stringResource(key: com.sample.lib1.StringResourceKey) : String`, and
+`KLib2.string.textSimple` is of type `com.sample.lib2.StringResourceKey`. Same simple name, different package. The compiler will let you know
 of misuse of `Resources` and `K` object references if you are using generated defaults.
 
 ## MultiModule setup
-As you can see there are `shared-lib1` as lib with compose reference, `shared-lib2` as plain library.
+As you can see, there is `shared-lib1` as a lib with a compose reference, and `shared-lib2` as a plain library.
 
-First important thing to understand is that all **what Kostra does is file based**.
-Resources and internal databases are stored as simple file and part of the resources bundle which is included in final release product.
+The first important thing to understand is that **everything Kostra does is file based**.
+Resources and internal databases are stored as simple files and as part of the resources bundle which is included in the final release product.
 
 *Each module generates "same" code based on given data.*<br/>
 **There is no real resource merging**.
@@ -103,9 +103,9 @@ Specific `modulePrefix` value has a side effect for the resources analysis, so t
 sample/shared-lib1/src/commonMain/resources/lib1/group/image.png
 ```
 *Notice the extra `lib1` subdirectory.*
-<br/><br/> With no `modulePrefix`, the `image.png` would fall into `lib1` group referencable via `K.lib1.image`, adding the `kostra.modulePrefix = "Lib1"` makes
-the 1st resources subdirectory ignored if it's matching (case-insensitive) `modulePrefix` and becomes `K.group.image`.
-Having all resources saved in `lib1` subdirectory prevents you having potential duplicates in final product.
+<br/><br/> With no `modulePrefix`, the `image.png` would fall into the `lib1` group referenceable via `K.lib1.image`. Adding `kostra.modulePrefix = "Lib1"` makes
+the 1st resources subdirectory ignored if it matches (case-insensitive) the `modulePrefix`, and it becomes `K.group.image`.
+Having all resources saved in a `lib1` subdirectory prevents you from having potential duplicates in the final product.
 
 **Obviously, `modulePrefix` and package from `KClassName` must be unique per each module.**
 
@@ -126,8 +126,8 @@ println(KLib2.string.textLib2.get())
 
 #### Interfaces
 
-KGP has also extra setting to generate interfaces for `K` objects for easier class delegation if necessary for "merged look a like" `K` object.
-Just enable it via `kostra.interfaces = true`, it's being enabled automatically if there is non empty `kostra.modulePrefix`.
+KGP has an extra setting to generate interfaces for `K` objects for easier class delegation if necessary for a "merged look-alike" `K` object.
+Just enable it via `kostra.interfaces = true`; it's enabled automatically if there is a non-empty `kostra.modulePrefix`.
 
 #### Class delegation
 
@@ -148,11 +148,11 @@ object KM {
 println(KM.images.lib1Text.get())
 println(KM.images.lib2Text.get())
 ```
-Having simple `KM` object with all merged resources makes coding UX nicer and hides multiple resources origins. <br/>
-`kostra.keyMapper` might help with to have extra logic for keys.
+Having a simple `KM` object with all merged resources makes coding UX nicer and hides multiple resource origins. <br/>
+`kostra.keyMapper` might help to add extra logic for keys.
 
-*All keys must be unique, otherwise the class delegation will fail due to identical name with return type difference, which can't be anyhow
-solved in kotlin*
+*All keys must be unique, otherwise the class delegation will fail due to identical names with different return types, which can't be
+solved in kotlin.*
 
 #### Internals
 In case of isolated module, everything kostra generated can be marked with `internal` visibility accessor. Just use
@@ -193,7 +193,8 @@ Building for Apple-Silicon-only? The project sets
 
 #### IOS
 KMP for iOS is currently the painful part. [KMP doesn't support any resource merging](https://github.com/JetBrains/compose-multiplatform/issues/3391) on any level.
-It must be done manually, for example [this way](https://github.com/jbruchanov/kostra/blob/KS-70_docs/sample/build.gradle).
+It must be done manually, for example like this — see the real setup in
+[sample/shared/build.gradle](shared/build.gradle).
 ```groovy
 //shared/build.gradle
 
@@ -205,7 +206,7 @@ kotlin {
         commonMain {
             dependencies {
                 //add a project module as a dependency, just like in any other case
-                //'api' instead of implementation is necessary for cocoapods export if you use them
+                //'api' instead of 'implementation' is necessary for cocoapods export if you use them
                 depModules.forEach {
                     api(it)
                 }
@@ -214,31 +215,31 @@ kotlin {
 
         iosMain {
             //add explicit reference to use module resources + kostra resources as part of this build
-            //similarly this can be done for any transitive dependency coming outside of project directly
-            //merging validation of running on iosSimulator is in
+            //similarly this can be done for any transitive dependency coming from outside of the project
+            //the merged result for iosSimulator builds ends up in
             //kostra/sample/build/ios/Debug-iphonesimulator/appIos.app/compose-resources/
             depModules.forEach { Project p ->
                 resources.srcDirs(new File(p.projectDir, "src/commonMain/resources"))
-                resources.srcDirs(new File(p.buildDir, "generated/kostra/resources"))
+                resources.srcDirs(new File(p.layout.getBuildDirectory().get().asFile, "generated/kostra/resources"))
             }
         }
     }
 }
 
-//just ensure that lib DBs are created with 'shared' module DB, probably unnecessary
+//just ensure that lib DBs are created with the 'shared' module DB, probably unnecessary
 tasks.getByName("generateDatabases")
     .dependsOn(":shared-lib1:generateDatabases", ":shared-lib2:generateDatabases")
 ```
 
 #### Native App
-This is just a MVP proof of concept, therefore no using any of shared modules.
-Afaik there is no way currently how to easily bundle the resources to your executable file.
+This is just an MVP proof of concept, therefore not using any of the shared modules.
+AFAIK there is currently no way to easily bundle the resources into your executable file.
 There is also no resource merging for native. This example just copies all the resources into a build output directory.
-Running the native app from IDE will fail with "Unable to find resources" exception, there seems to be no way how to specify what should be the
+Running the native app from the IDE will fail with an "Unable to find resources" exception; there seems to be no way to specify what should be the
 working directory.
 
 To test it, just run
-`./gradlew appNativeConsole:assemble` and outputs go to `build/bin/native/releaseExecutable`. Running the `./appNativeConsole` works as expected,
+`./gradlew appNativeConsole:assemble` and outputs go to `build/bin/native/releaseExecutable`. Running `./appNativeConsole` from there works as expected,
 tested on `Windows`, `Ubuntu in Windows`, `MacOs`.
 
 ## License
