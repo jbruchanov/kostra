@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.kotlin.poet)
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.kotlinx.coroutines.jdk)
+    implementation(libs.kotlinx.serialisation.json)
 
     implementation(libs.icu)
 

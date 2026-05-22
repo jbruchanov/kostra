@@ -1,10 +1,11 @@
-@file:Suppress("UNCHECKED_CAST")
-
 package com.jibru.kostra.plugin.icu
 
 import com.jibru.kostra.KLocale
 import com.jibru.kostra.icu.PluralCategory
-import groovy.json.JsonSlurper
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.net.URI
 
@@ -29,23 +30,27 @@ class IcuPluralsDownloader(
         if (!(tmpFile.exists() && tmpFile.length() > 0)) {
             tmpFile.writeBytes(uri.toURL().openStream().readAllBytes())
         }
-        val rawJsonData = JsonSlurper().parse(tmpFile.inputStream()) as Map<String, *>
-        val baseObject = rawJsonData.obj("supplemental")
-        val version = baseObject.obj("version")
+        val root = Json.parseToJsonElement(tmpFile.readText()).jsonObject
+        val supplemental = root.obj("supplemental")
+        val version = supplemental.obj("version")
 
-        val items = baseObject.obj(jsonObjName) as Map<String, Map<String, String>>
-        val data = items
+        val items = supplemental.obj(jsonObjName)
+        val data = items.entries
             .filter { it.key.length <= KLocale.MaxLocaleLen }
-            .map { obj ->
-                KLocale(obj.key) to obj.value.map { it.key.replace("pluralRule-count-", "").let { PluralCategory.of(it) } to it.value }.toMap()
-            }.toMap()
+            .associate { (locale, rulesElement) ->
+                val rules = rulesElement.jsonObject.entries.associate { (ruleKey, ruleValue) ->
+                    PluralCategory.of(ruleKey.removePrefix("pluralRule-count-")) to ruleValue.jsonPrimitive.content
+                }
+                KLocale(locale) to rules
+            }
 
         return Result(
-            unicodeVersion = version["_unicodeVersion"].toString(),
-            cldrVersion = version["_cldrVersion"].toString(),
+            unicodeVersion = version["_unicodeVersion"]!!.jsonPrimitive.content,
+            cldrVersion = version["_cldrVersion"]!!.jsonPrimitive.content,
             data = data,
         )
     }
 
-    private fun Map<String, *>.obj(name: String) = this[name] as Map<String, *>
+    private fun JsonObject.obj(name: String): JsonObject =
+        this[name]?.jsonObject ?: error("Missing JSON object '$name' in ${this.keys}")
 }
