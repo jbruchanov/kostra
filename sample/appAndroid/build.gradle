@@ -1,38 +1,57 @@
 plugins {
-    id("org.jetbrains.kotlin.multiplatform")
     id("com.android.application")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 apply from: "$rootProject.projectDir/../build-ktlint.gradle"
-apply from: "$rootProject.projectDir/../build-android-lib.gradle"
 
-kotlin {
-    androidTarget {}
+android {
+    namespace = "com.jibru.kostra.android.app"
+    compileSdk = libs.versions.android.sdk.compile.get().toInteger()
+
+    defaultConfig {
+        minSdk = libs.versions.android.sdk.min.get().toInteger()
+        targetSdk = libs.versions.android.sdk.target.get().toInteger()
+        versionCode = 1
+        versionName = "1.0.0"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.jvmtarget.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.jvmtarget.get())
+    }
+
+    kotlin {
+        jvmToolchain(libs.versions.jvmtarget.get().toInteger())
+    }
+
+    buildFeatures {
+        compose = false
+    }
+
+    //keep the legacy KMP-style folder layout (src/androidMain) so we don't have to move files
+    //AGP 9 built-in Kotlin exposes a separate `kotlin` source dir set; `java.srcDirs` alone
+    //does NOT pick up .kt files, which silently breaks runtime (MainActivity missing from APK).
     sourceSets {
-        androidMain {
-            dependencies {
-                implementation(project(":shared"))
-                implementation(libs.kostra.common)
-                implementation(libs.kostra.compose)
-
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material)
-                implementation(libs.kotlinx.datetime)
-                implementation(libs.bundles.android.compose)
-                implementation(libs.bundles.jetbrains.compose.app)
-            }
+        named("main") {
+            manifest.srcFile("src/androidMain/AndroidManifest.xml")
+            java.srcDirs("src/androidMain/kotlin")
+            kotlin.srcDirs("src/androidMain/kotlin")
+            res.srcDirs("src/androidMain/res")
         }
     }
 }
 
+dependencies {
+    implementation(project(":shared"))
+    implementation(libs.kostra.common)
+    implementation(libs.kostra.compose)
 
-android {
-    namespace = "com.jibru.kostra.android.app"
-    defaultConfig {
-        versionCode = 1
-        versionName "1.0.0"
-    }
+    implementation(compose.runtime)
+    implementation(compose.foundation)
+    implementation(compose.material)
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.bundles.android.compose)
+    implementation(libs.bundles.jetbrains.compose.app)
 }

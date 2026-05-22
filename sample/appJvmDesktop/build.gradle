@@ -12,9 +12,7 @@ apply from: "$rootProject.projectDir/../build-ktlint.gradle"
 
 
 kotlin {
-    jvm {
-        withJava()
-    }
+    jvm()
 
     applyDefaultHierarchyTemplate()
     sourceSets {
@@ -36,6 +34,7 @@ kotlin {
         jvmTest {
             dependencies {
                 implementation(libs.bundles.unittest.jvm)
+                runtimeOnly(libs.junit.platform.launcher)
             }
         }
     }
@@ -54,7 +53,7 @@ compose.desktop {
 
 
 
-tasks.jvmTest {
+tasks.named("jvmTest") {
     useJUnitPlatform()
     //mockk uses logback configured via src/jvmTest/resources/logback.xml
     testLogging {

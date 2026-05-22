@@ -2,7 +2,7 @@ import com.jibru.kostra.plugin.ResourcesDefaults
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.jibru.kostra.resources")
@@ -14,7 +14,9 @@ apply from: "$rootProject.projectDir/../build-android-lib.gradle"
 kotlin {
     jvm()
 
-    androidTarget()
+    android {
+        namespace = "com.sample.lib1"
+    }
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -34,10 +36,6 @@ kotlin {
             }
         }
     }
-}
-
-android {
-    namespace = "com.sample.lib1"
 }
 
 kostra {
