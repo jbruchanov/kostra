@@ -20,15 +20,23 @@ import org.jetbrains.compose.resources.vectorResource
 
 @Composable
 internal fun KResources.composePainter(key: PainterResourceKey, qualifiers: KQualifiers): Painter {
-    val path = assetPath(key, qualifiers)
-    require(!path.endsWith(".svg", ignoreCase = true)) { "Unsupported SVG on current platform, key:$key, asset:'$path'" }
-    val isXml = path.endsWith(".xml") || path.endsWith(".vxml")
-    //imageResources is caching stuff internally
+    //Cache the asset-path lookup + DrawableResource per (key, qualifiers). Without this remember,
+    //a fresh DrawableResource is allocated on every recomposition and Compose-Resources' internal
+    //caches (keyed on the DrawableResource) get silently invalidated.
+    val resolved = remember(this, key, qualifiers) {
+        val path = assetPath(key, qualifiers)
+        require(!path.endsWith(".svg", ignoreCase = true)) {
+            "Unsupported SVG on current platform, key:$key, asset:'$path'"
+        }
+        val isXml = path.endsWith(".xml") || path.endsWith(".vxml")
+        isXml to path.toDrawableResource()
+    }
+    val (isXml, drawable) = resolved
     //it's a copy of org.jetbrains.compose.resources.painterResource, just using also vxml for the vector drawables
     return if (isXml) {
-        rememberVectorPainter(vectorResource(path.toDrawableResource()))
+        rememberVectorPainter(vectorResource(drawable))
     } else {
-        val imageResource = imageResource(path.toDrawableResource())
+        val imageResource = imageResource(drawable)
         remember(imageResource) { BitmapPainter(imageResource) }
     }
 }
