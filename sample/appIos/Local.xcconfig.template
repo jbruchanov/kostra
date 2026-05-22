@@ -1,0 +1,13 @@
+// Copy this file to Local.xcconfig and fill in your own values.
+// Local.xcconfig is gitignored; this template is committed.
+//
+// The pbxproj references ${TEAM_ID} and ${BUNDLE_ID} for signing. Without
+// Local.xcconfig (or these keys), `xcodebuild` will fail with
+// "Signing for 'appIos' requires a development team" — that's expected.
+//
+// Setup:
+//   cp Local.xcconfig.template Local.xcconfig
+//   # then edit Local.xcconfig with your real values
+//   pod install   # rewrites the include chain into Pods xcconfigs
+TEAM_ID = YOUR_APPLE_TEAM_ID
+BUNDLE_ID = your.unique.bundle.id

@@ -3,3 +3,27 @@ target 'appIos' do
   platform :ios, '14.1'
   pod 'shared', :path => '../shared'
 end
+
+post_install do |installer|
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
+  end
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
+    end
+  end
+
+  # Inject `#include? "../../../Local.xcconfig"` into each aggregate Pods xcconfig
+  # so DEVELOPMENT_TEAM / PRODUCT_BUNDLE_IDENTIFIER from the developer's local
+  # (gitignored) Local.xcconfig flow through to the app target. The `?` makes
+  # the include optional, so the build still works without Local.xcconfig.
+  installer.aggregate_targets.each do |aggregate|
+    aggregate.xcconfigs.each_key do |config_name|
+      xcconfig_path = aggregate.xcconfig_path(config_name)
+      include_line = "#include? \"../../../Local.xcconfig\"\n"
+      contents = File.exist?(xcconfig_path) ? File.read(xcconfig_path) : ''
+      File.write(xcconfig_path, include_line + contents) unless contents.start_with?(include_line)
+    end
+  end
+end

@@ -15,7 +15,6 @@ project.version = libs.versions.project.version.get()
 kotlin {
     jvm()
 
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
     android {
@@ -47,14 +46,5 @@ kotlin {
         jvmMain {
             dependsOn(jvmShared)
         }
-
-        iosX64Main
-        iosArm64Main
-        iosSimulatorArm64Main
-        iosMain
-        iosX64Test
-        iosArm64Test
-        iosSimulatorArm64Test
-        iosTest
     }
 }
