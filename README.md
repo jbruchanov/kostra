@@ -248,6 +248,11 @@ kostra {
     // use only locale qualifiers on files known to java, so for example '-xxxx' qualifier
     // will be ignored as it's not java known locale and will be ignored
     strictLocale /*Boolean*/
+    // require every base language present in resources to define ALL string/plural keys.
+    // Region/script variants (e.g. en-rUK, en-rUS, zh-Hant) may be partial — they only
+    // override what differs from the base. Different languages each need their own
+    // complete translation. Default true. See "Locale Fallback Order" / "Strict Mode".
+    strictMode /*Boolean*/
 
     androidResources {
         // lambda to convert keys, useful for example for converting snake_case to camelCase
@@ -544,6 +549,26 @@ Each unique locale produces its own database file, e.g.:
 
 **Important:** The default/fallback database (`string-default.db`) must define values for **all** string/plural keys.
 The build will fail if any key is missing a default value, since it serves as the last-resort fallback at runtime.
+
+#### Strict Mode
+
+When `kostra.strictMode = true` (default), the analyser additionally requires every **base language**
+present in resources to define all string/plural keys. **Region/script variants** of a base language
+may be partial — they only need to override what differs from the base.
+
+Given a `default` translation plus `en`, `en-rUK`, `en-rUS`, `cs`:
+
+| Locale | Strict-mode requirement |
+|---|---|
+| `default` | All keys (checked separately, always on) |
+| `en` (base of `en-r*`) | All keys |
+| `en-rUK`, `en-rUS` | Only the keys that differ from `en` |
+| `cs` (base of `cs`) | All keys |
+| `cs-rCZ` *(if present)* | Only the keys that differ from `cs` |
+
+If you have an `en-rUK` translation but no base `en` file, the build fails — the region variant
+has nothing to fall back to. Either add the base `en` translation or disable strict mode with
+`kostra.strictMode = false`.
 
 #### Strings formatting
 

@@ -55,6 +55,14 @@ abstract class KostraPluginExtension {
     abstract val strictLocale: Property<Boolean>
 
     /**
+     * In strict mode every base language present in resources must define ALL string/plural keys.
+     * Region/script variants (e.g. `en-rUK`, `en-rUS`, `zh-Hant`) may be partial — they only override
+     * what differs from the base. Different languages each need their own complete translation.
+     * Default: true. Build fails with the list of missing keys when violated.
+     */
+    abstract val strictMode: Property<Boolean>
+
+    /**
      * Not nicely working autoupdate, MVP, don't use IDE doesn't see the changes.
      */
     abstract val useFileWatcher: Property<Boolean>

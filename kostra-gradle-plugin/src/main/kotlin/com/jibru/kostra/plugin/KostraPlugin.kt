@@ -59,6 +59,7 @@ class KostraPlugin : Plugin<Project> {
                 it.outputFile.set(target.analysisFile())
                 it.resourceDirs.addAll(extension.resourceDirs)
                 it.resourceDirs.addAll(extension.androidResources.resourceDirs)
+                it.strictMode.set(extension.strictMode)
             }
 
         val generateResourcesTaskProvider = target.tasks
@@ -96,6 +97,7 @@ class KostraPlugin : Plugin<Project> {
             autoConfig.set(true)
             useFileWatcher.set(false)
             strictLocale.set(true)
+            strictMode.set(true)
             kClassName.set(KClassName)
             modulePrefix.set("")
             internalVisibility.set(false)

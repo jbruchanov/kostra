@@ -11,7 +11,10 @@ import java.io.ObjectOutputStream
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -23,6 +26,10 @@ abstract class AnalyseResourcesTask : DefaultTask() {
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val resourceDirs: ListProperty<File>
+
+    @get:Input
+    @get:Optional
+    abstract val strictMode: Property<Boolean>
 
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
@@ -43,6 +50,11 @@ abstract class AnalyseResourcesTask : DefaultTask() {
         val processor = ResItemsProcessor(items)
         validateDefaultFallback("string", processor.stringsForDbs, processor.stringsDistinctKeys)
         validateDefaultPluralFallback(processor)
+
+        if (strictMode.getOrElse(true)) {
+            validateStrictModeStringCoverage(processor)
+            validateStrictModePluralCoverage(processor)
+        }
 
         val outputFile = outputFile.get().asFile
         outputFile.parentFile.mkdirs()
@@ -94,5 +106,79 @@ abstract class AnalyseResourcesTask : DefaultTask() {
                     "All $type keys must have a default value defined in the base (non-qualified) resource file.",
             )
         }
+    }
+
+    private fun validateStrictModeStringCoverage(processor: ResItemsProcessor) {
+        validateStrictModeCoverage(
+            type = "string",
+            keys = processor.stringsDistinctKeys,
+            valuePresentByLocale = processor.stringsForDbs
+                .mapValues { (_, values) -> values.map { it != null } },
+        )
+    }
+
+    private fun validateStrictModePluralCoverage(processor: ResItemsProcessor) {
+        val perLocale = processor.pluralsPerLocale ?: return
+        validateStrictModeCoverage(
+            type = "plural",
+            keys = processor.pluralsDistinctKeys,
+            // A missing plural entry is filled with `ResItem.Plurals.EmptyItems` — a list of the
+            // correct size but with every category null. Treat "all categories null" as missing.
+            valuePresentByLocale = perLocale
+                .mapValues { (_, items) ->
+                    items.map { (_, categoryItems) -> categoryItems.any { it != null } }
+                },
+        )
+    }
+}
+
+/**
+ * Strict-mode check: for every base language present in resources, the language-only locale
+ * (e.g. `en` when `en-rUK` or `en-rUS` exist) must define all [keys]. Region/script variants
+ * may be partial — they only override what differs from the base.
+ *
+ * The undefined/default locale ([KLocale.Undefined]) is validated separately by the
+ * default-fallback check and not re-checked here.
+ *
+ * Throws [IllegalStateException] listing every missing translation when the rule is violated.
+ */
+internal fun validateStrictModeCoverage(
+    type: String,
+    keys: List<String>?,
+    valuePresentByLocale: Map<KLocale, List<Boolean>>,
+) {
+    if (valuePresentByLocale.isEmpty() || keys.isNullOrEmpty()) return
+
+    val baseLanguages = valuePresentByLocale.keys
+        .filter { it != KLocale.Undefined }
+        .map { it.languageLocale() }
+        .toSet()
+
+    val errors = mutableListOf<String>()
+    baseLanguages.sortedBy { it.tag }.forEach { baseLanguage ->
+        val baseValues = valuePresentByLocale[baseLanguage]
+        if (baseValues == null) {
+            val variants = valuePresentByLocale.keys
+                .filter { it != KLocale.Undefined && it.languageLocale() == baseLanguage && it != baseLanguage }
+                .map { it.tag }
+                .sorted()
+            errors += "  language '${baseLanguage.tag}' is missing the base translation " +
+                "(only region/script variants exist: ${variants.joinToString()}). " +
+                "Add a base translation for '${baseLanguage.tag}' that defines all $type keys."
+            return@forEach
+        }
+        val missing = keys.indices.filter { i -> !baseValues[i] }.map { keys[it] }
+        if (missing.isNotEmpty()) {
+            errors += "  language '${baseLanguage.tag}' is missing $type keys: " +
+                missing.joinToString { "'$it'" }
+        }
+    }
+    if (errors.isNotEmpty()) {
+        throw IllegalStateException(
+            "Strict mode: every base language must define all $type keys " +
+                "(region/script variants like `en-rUK` may be partial). " +
+                "Disable with `kostra.strictMode = false`.\n" +
+                errors.joinToString("\n"),
+        )
     }
 }
