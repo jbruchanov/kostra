@@ -50,4 +50,5 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.bundles.android.compose)
     implementation(libs.bundles.jetbrains.compose.app)
+    debugImplementation(libs.jetbrains.compose.ui.tooling)
 }

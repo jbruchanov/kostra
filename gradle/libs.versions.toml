@@ -56,6 +56,8 @@ jetbrains-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "
 jetbrains-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "jetbrains-compose-ui" }
 jetbrains-compose-material = { module = " org.jetbrains.compose.material:material", version.ref = "jetbrains-compose-ui" }
 jetbrains-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "jetbrains-compose-ui" }
+jetbrains-compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "jetbrains-compose-ui" }
+jetbrains-compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "jetbrains-compose-ui" }
 icu = { module = "com.ibm.icu:icu4j", version.ref = "icu" }
 kostra-common = { module = "com.jibru.kostra:kostra-common", version.ref = "project-version" }
 kostra-compose = { module = "com.jibru.kostra:kostra-compose", version.ref = "project-version" }
