@@ -46,17 +46,16 @@ internal class StrictModeIntegrationTest {
     }
 
     @Test
-    fun `strings - only region variant without base language fails`() {
+    fun `strings - only region variants without a bare base language is valid`() {
         val items = listOf(
             ResItem.StringRes("a", "a", KQualifiers.Undefined.key),
-            // No KLocale("en") at all, just en-GB and en-US — strict mode requires base "en"
+            // No KLocale("en") at all, just en-GB and en-US — valid: partial overrides on the
+            // complete default, mirroring Android's region -> language -> default fallback.
             ResItem.StringRes("a", "a-en-gb", KQualifiers(KLocale("en", "GB")).key),
             ResItem.StringRes("a", "a-en-us", KQualifiers(KLocale("en", "US")).key),
         )
-        val ex = assertThrows(IllegalStateException::class.java) { validateViaProcessorForStrings(items) }
-        assertThat(ex.message).contains("language 'en' is missing the base translation")
-        assertThat(ex.message).contains("en-gb")
-        assertThat(ex.message).contains("en-us")
+        // Must NOT throw.
+        validateViaProcessorForStrings(items)
     }
 
     @Test
@@ -107,14 +106,14 @@ internal class StrictModeIntegrationTest {
     }
 
     @Test
-    fun `plurals - only region variant without base language fails`() {
+    fun `plurals - only region variant without a bare base language is valid`() {
         val items = listOf(
             ResItem.Plurals("apples", mapOf(PluralCategory.One to "1 apple", PluralCategory.Other to "x apples").toPluralList(), KQualifiers.Undefined.key),
-            // No base "en", just en-GB
+            // No base "en", just en-GB — valid: partial override on the complete default.
             ResItem.Plurals("apples", mapOf(PluralCategory.Other to "x apples-gb").toPluralList(), KQualifiers(KLocale("en", "GB")).key),
         )
-        val ex = assertThrows(IllegalStateException::class.java) { validateViaProcessorForPlurals(items) }
-        assertThat(ex.message).contains("language 'en' is missing the base translation")
+        // Must NOT throw.
+        validateViaProcessorForPlurals(items)
     }
 
     // endregion
