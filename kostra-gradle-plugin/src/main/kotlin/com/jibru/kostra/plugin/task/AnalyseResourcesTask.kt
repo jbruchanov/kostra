@@ -133,9 +133,21 @@ abstract class AnalyseResourcesTask : DefaultTask() {
 }
 
 /**
- * Strict-mode check: for every base language present in resources, the language-only locale
- * (e.g. `en` when `en-rUK` or `en-rUS` exist) must define all [keys]. Region/script variants
- * may be partial — they only override what differs from the base.
+ * Strict-mode check: every base-language translation that EXISTS must define all [keys].
+ *
+ * "Base language" = the language-only locale (`en`, `pt`, `zh`). The rule mirrors Android's
+ * own resource-fallback semantics rather than being stricter than them:
+ *
+ *  - If a language file exists for the bare language (e.g. `strings-de.xml` → `de`), it is a
+ *    declared full translation and MUST define every key — a half-translated language is a bug.
+ *
+ *  - If a language has ONLY region/script variants and NO bare base (e.g. `zh-Hans` + `zh-Hant`
+ *    with no `zh`, or `en-rUS` with no `en`), that is VALID. The variants are partial overrides
+ *    layered on top of the default bucket; any key a variant doesn't define resolves through
+ *    `variant → language → default`, exactly as Android resolves `values-zh-rCN → values-zh →
+ *    values`. The default bucket is guaranteed complete by the separate default-fallback check,
+ *    so nothing can fall through to "no value". Requiring a bare `zh`/`en`/`pt` base here would
+ *    be stricter than Android itself and forces redundant duplicate files.
  *
  * The undefined/default locale ([KLocale.Undefined]) is validated separately by the
  * default-fallback check and not re-checked here.
@@ -156,17 +168,10 @@ internal fun validateStrictModeCoverage(
 
     val errors = mutableListOf<String>()
     baseLanguages.sortedBy { it.tag }.forEach { baseLanguage ->
-        val baseValues = valuePresentByLocale[baseLanguage]
-        if (baseValues == null) {
-            val variants = valuePresentByLocale.keys
-                .filter { it != KLocale.Undefined && it.languageLocale() == baseLanguage && it != baseLanguage }
-                .map { it.tag }
-                .sorted()
-            errors += "  language '${baseLanguage.tag}' is missing the base translation " +
-                "(only region/script variants exist: ${variants.joinToString()}). " +
-                "Add a base translation for '${baseLanguage.tag}' that defines all $type keys."
-            return@forEach
-        }
+        //No bare-language file (only region/script variants) → valid: the variants are partial
+        //overrides on top of the complete default. See KDoc. Skip without error.
+        val baseValues = valuePresentByLocale[baseLanguage] ?: return@forEach
+        //A bare-language file that DOES exist must be complete.
         val missing = keys.indices.filter { i -> !baseValues[i] }.map { keys[it] }
         if (missing.isNotEmpty()) {
             errors += "  language '${baseLanguage.tag}' is missing $type keys: " +
@@ -175,9 +180,9 @@ internal fun validateStrictModeCoverage(
     }
     if (errors.isNotEmpty()) {
         throw IllegalStateException(
-            "Strict mode: every base language must define all $type keys " +
-                "(region/script variants like `en-rUK` may be partial). " +
-                "Disable with `kostra.strictMode = false`.\n" +
+            "Strict mode: every base-language translation that exists must define all $type keys " +
+                "(region/script variants like `en-rUK` may be partial, and a language with only " +
+                "variants and no bare base is allowed). Disable with `kostra.strictMode = false`.\n" +
                 errors.joinToString("\n"),
         )
     }

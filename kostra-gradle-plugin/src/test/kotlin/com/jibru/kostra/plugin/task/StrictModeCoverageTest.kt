@@ -54,20 +54,18 @@ internal class StrictModeCoverageTest {
     }
 
     @Test
-    fun `region variant without any base language is flagged`() {
-        val ex = assertThrows(IllegalStateException::class.java) {
-            validateStrictModeCoverage(
-                type = "string",
-                keys = listOf("a", "b"),
-                valuePresentByLocale = mapOf(
-                    KLocale("en", "gb") to listOf(true, true),
-                    KLocale("en", "us") to listOf(true, false),
-                ),
-            )
-        }
-        assertThat(ex.message).contains("language 'en' is missing the base translation")
-        assertThat(ex.message).contains("en-gb")
-        assertThat(ex.message).contains("en-us")
+    fun `region variants without a bare base language are valid`() {
+        //Mirrors Android: `en-rGB` + `en-rUS` with no bare `en` is fine — the variants are
+        //partial overrides layered on the complete default bucket. Must NOT throw.
+        validateStrictModeCoverage(
+            type = "string",
+            keys = listOf("a", "b"),
+            valuePresentByLocale = mapOf(
+                KLocale.Undefined to listOf(true, true),
+                KLocale("en", "gb") to listOf(true, true),
+                KLocale("en", "us") to listOf(true, false),
+            ),
+        )
     }
 
     @Test
@@ -92,17 +90,36 @@ internal class StrictModeCoverageTest {
     }
 
     @Test
-    fun `script variant without base is flagged the same way as region variant`() {
+    fun `script variants without a bare base language are valid`() {
+        //The canonical case: `zh-Hans` + `zh-Hant` with no bare `zh`. Valid — there is no
+        //sensible single "Chinese" base, the scripts ARE the translations, and anything they
+        //omit falls through to the complete default. Must NOT throw.
+        validateStrictModeCoverage(
+            type = "string",
+            keys = listOf("a"),
+            valuePresentByLocale = mapOf(
+                KLocale.Undefined to listOf(true),
+                KLocale("zh", null, "Hans") to listOf(true),
+                KLocale("zh", null, "Hant") to listOf(true),
+            ),
+        )
+    }
+
+    @Test
+    fun `script variant WITH an incomplete bare base is still flagged`() {
+        //A bare `zh` file that DOES exist remains a declared full translation and must be
+        //complete — the relaxation only covers the no-bare-base case.
         val ex = assertThrows(IllegalStateException::class.java) {
             validateStrictModeCoverage(
                 type = "string",
-                keys = listOf("a"),
+                keys = listOf("a", "b"),
                 valuePresentByLocale = mapOf(
-                    KLocale("zh", null, "Hans") to listOf(true),
-                    KLocale("zh", null, "Hant") to listOf(true),
+                    KLocale.Undefined to listOf(true, true),
+                    KLocale("zh") to listOf(true, false),
+                    KLocale("zh", null, "Hant") to listOf(true, true),
                 ),
             )
         }
-        assertThat(ex.message).contains("language 'zh' is missing the base translation")
+        assertThat(ex.message).contains("language 'zh' is missing string keys: 'b'")
     }
 }
