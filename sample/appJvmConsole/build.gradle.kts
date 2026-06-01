@@ -36,6 +36,7 @@ tasks.withType<Test> {
 }
 
 kostra {
+    strictMode = false
     androidResources {
         keyMapper { key, _ -> key.toCamelCase() }
         resourceDirs.add(file("../shared/src/commonMain/resources_strings"))

@@ -44,6 +44,7 @@ kotlin {
                 implementation(libs.kostra.common)
                 implementation(libs.kostra.compose)
                 implementation(libs.bundles.jetbrains.compose.app)
+                implementation(libs.jetbrains.compose.ui.tooling.preview)
 
                 //api necessary for cocoapods export
                 depModules.forEach {
@@ -68,12 +69,21 @@ kotlin {
                 depModules.forEach { Project p ->
                     def srcResources = new File(p.projectDir, "src/commonMain/resources")
                     def genResources = new File(p.layout.getBuildDirectory().get().asFile, "generated/kostra/resources")
+                    //`srcResources` is a hand-authored source directory — if it's missing that's a
+                    //genuine misconfiguration, so fail loudly.
                     if (!srcResources.exists()) {
                         throw new IllegalStateException("IOS shared depends on ${p.name} resources, but ${srcResources.absolutePath} doesn't exist!")
                     }
-                    if (!genResources.exists()) {
-                        throw new IllegalStateException("IOS shared depends on ${p.name} resources, but ${genResources.absolutePath} doesn't exist!")
-                    }
+                    //`genResources` is a BUILD OUTPUT (produced by ${p.name}:generateDatabases). On a
+                    //clean checkout — and during every Android Studio / IDE Gradle sync, which fetches
+                    //the project model BEFORE running any task — this directory legitimately doesn't
+                    //exist yet. Throwing here made sync fail with
+                    //"IOS shared depends on shared-lib1 resources, but …/generated/kostra/resources
+                    //doesn't exist!". Gradle tolerates a `srcDir` that points at a not-yet-created
+                    //directory (it's treated as empty until populated), and the explicit
+                    //`generateDatabases.dependsOn(:shared-lib1:generateDatabases, …)` at the bottom of
+                    //this file guarantees it IS populated before any iOS resource packaging runs. So
+                    //just register it unconditionally — no existence check needed.
                     resources.srcDirs(srcResources)
                     resources.srcDirs(genResources)
                 }
@@ -87,6 +97,12 @@ kostra {
     KClassName = "com.sample.app.K"
     interfaces = true
     resourcesDefaults.value(ResourcesDefaults.values().toList())
+    //Sample resources intentionally exercise partial-translation cases
+    //(`en-rUS` / `en-rGB` variants without a separate base `en.xml`), so
+    //strict-mode coverage flags them as missing. Disable so the demo build
+    //stays green — the production behaviour is tested via the kostra plugin's
+    //own test suite, not via this sample.
+    strictMode = false
     androidResources {
         painterGroups.add("flags.*")
         keyMapper { key, file -> key }
@@ -100,3 +116,19 @@ kostra {
 //just ensure that lib DBs are created with 'shared' module DB
 tasks.getByName("generateDatabases")
     .dependsOn(":shared-lib1:generateDatabases", ":shared-lib2:generateDatabases")
+
+//Android Studio renders previews by instantiating composables against the
+//Android target's runtime classpath. `ui-tooling` is the preview-runtime
+//library (LayoutInflater stubs, preview-only CompositionLocals, etc.). With
+//the AGP-9 `com.android.kotlin.multiplatform.library` plugin the right
+//configuration is `androidRuntimeClasspath` (the older Android Gradle Plugin
+//variant `debugImplementation` doesn't exist on the new plugin — see the
+//"Compose UI Previews in KMP" doc). Guarded by `plugins.withId` so modules
+//that opt into this convention but don't apply the new Android KMP plugin
+//skip the wiring silently instead of failing at config time with
+//"configuration not found".
+plugins.withId("com.android.kotlin.multiplatform.library") {
+    dependencies {
+        androidRuntimeClasspath(libs.jetbrains.compose.ui.tooling)
+    }
+}
