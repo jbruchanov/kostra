@@ -614,6 +614,45 @@ from IDE, so it's crashing with "resources not found" exception)*
 Kostra Gradle Plugin has implemented FileWatcher (`kostra.useFileWatcher`) to update `K` object whenever resources changed. Unfortunately IDE doesn't
 update indexes based on that, so the changes are not visible until refreshed. For this reason it's disabled by default as there is no good UX.
 
+#### Android `assets/` & the Context-capture hack
+
+On Android, Kostra prefers to package its generated database files and binary resources into the
+APK's **`assets/`** directory (the same workaround Compose Multiplatform uses, because Kotlin
+Multiplatform `commonMain` JVM resources don't reliably reach the Android classloader at runtime).
+
+**Caveat — AGP 9 KMP-Android library limitation.** Modules that apply
+`com.android.kotlin.multiplatform.library` do **not** expose an assets pipeline:
+`Variant.sources.assets` and `AndroidSourceSet.main` are both `null` on
+`KotlinMultiplatformAndroidVariant`. In that case Kostra cannot move the DBs into `assets/` at
+build time, so it leaves them as jar resources on the KMP `commonMain.resources` path — they still
+end up in the APK at the same place they always did. On regular `com.android.application` and
+`com.android.library` modules (or any future KMP-Android plugin that exposes assets), the DBs land
+under `assets/` as preferred. The runtime resource loader tries both: `AssetManager` first,
+classloader resources as a fallback, so either build-time outcome works.
+
+`AssetManager` requires a `Context`. Because Kostra's resource APIs are context-less by design, the
+library has to obtain an Application Context on its own. It does so in this order:
+
+1. **`KostraAndroidContextProvider`** — a one-method `ContentProvider` declared in lib-kostra-common's
+   `AndroidManifest.xml`. AGP manifest-merges it into every consumer APK; Android instantiates it during
+   `Application#attach`, before any `Activity`, so the context is available before any Kostra call.
+2. **Manual override** — `KostraAndroidContextHolder.set(applicationContext)` from your `Application.onCreate()`.
+   Use this if your build strips library content providers (e.g. `tools:node="remove"`, multi-process
+   restrictions, custom instrumentation, or any host that initializes Kostra before the auto-provider can
+   run). The setter rejects `Activity` instances (and `ContextWrapper` chains that bottom out at an
+   `Activity`) to prevent permanent leaks.
+3. **Last-resort fallback** — reflection on the internal `android.app.ActivityThread.currentApplication()`.
+   The same trick AndroidX uses; not officially supported but reliable in practice.
+
+If none of the above produce a Context, the first resource load throws `UnableToOpenResourceStream` with
+an `IllegalStateException` cause that explains exactly what to fix (declare the provider, or call
+`KostraAndroidContextHolder.set`).
+
+*Why this is a "hack":* loading from `assets/` is not the canonical KMP way (Kotlin's official model
+puts resources on the classpath). It is the practical workaround that the broader Compose Multiplatform
+ecosystem also adopted; until KMP fixes commonMain JVM resource visibility on Android, this is the
+mechanism Kostra uses.
+
 ## License
 
 [Apache License 2.0](https://github.com/jbruchanov/kostra/blob/develop/LICENSE)

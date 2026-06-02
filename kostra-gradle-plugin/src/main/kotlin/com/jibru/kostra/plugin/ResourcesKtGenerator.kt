@@ -28,7 +28,11 @@ import kotlin.reflect.KClass
 class ResourcesKtGenerator(
     items: List<ResItem>,
     className: String = KostraPluginConfig.KClassName,
-    private val resDbsFolderName: String = KostraPluginConfig.ResourceDbFolderName,
+    //Filename prefix prepended to every DB file reference in the generated K class. Empty means
+    //"no prefix" → DBs sit at the root of assets/kostra_resources/ (e.g. "binary.db"). With a
+    //module prefix it becomes e.g. "lib1_" → "lib1_binary.db". There is no longer a kresources/
+    //sub-folder; DB files share the root of kostra_resources/ with the binary file resources.
+    private val resDbsFolderName: String = "",
     private val resourcePropertyName: String = KostraPluginConfig.ResourcePropertyName,
     private val internalVisibility: Boolean = false,
     private val useAliasImports: Boolean = true,
@@ -115,7 +119,9 @@ class ResourcesKtGenerator(
                                         propertyName = ResItem.String,
                                         propertyType = StringDatabase::class,
                                         locales = stringsAndPluralsForDb.getValue(ResItem.String).keys,
-                                        "$resDbsFolderName/${ResItem.String}-%s.db",
+                                        //resDbsFolderName is now a FILENAME PREFIX (e.g. "lib1_" or ""),
+                                        //no longer a sub-folder name — concatenate, don't slash-join.
+                                        "$resDbsFolderName${ResItem.String}-%s.db",
                                     )
                                 }
                                 if (hasPlurals) {
@@ -123,11 +129,11 @@ class ResourcesKtGenerator(
                                         propertyName = ResItem.Plural,
                                         propertyType = PluralDatabase::class,
                                         locales = stringsAndPluralsForDb.getValue(ResItem.Plural).keys,
-                                        "$resDbsFolderName/${ResItem.Plural}-%s.db",
+                                        "$resDbsFolderName${ResItem.Plural}-%s.db",
                                     )
                                 }
                                 if (hasAnyFiles) {
-                                    addStatement("%L = %T(%S),", ResItem.Binary, FileDatabase::class, "$resDbsFolderName/${ResItem.Binary}.db")
+                                    addStatement("%L = %T(%S),", ResItem.Binary, FileDatabase::class, "$resDbsFolderName${ResItem.Binary}.db")
                                 }
                                 unindent()
                                 addStatement(")")

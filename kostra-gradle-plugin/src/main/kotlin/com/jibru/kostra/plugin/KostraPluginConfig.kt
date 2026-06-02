@@ -1,8 +1,10 @@
+@file:Suppress("ConstPropertyName")
+
 package com.jibru.kostra.plugin
 
 import com.jibru.kostra.plugin.ext.capitalize
-import org.gradle.api.Project
 import java.io.File
+import org.gradle.api.Project
 
 object KostraPluginConfig {
     const val DslObjectName = "kostra"
@@ -16,15 +18,16 @@ object KostraPluginConfig {
     const val ComposePluginPackage = "org.jetbrains.compose"
     val ImageExts = setOf("bmp", "jpg", "jpeg", "png", "svg", "webp", "vxml")
 
-    //looks like _kostra is ignored
-    const val ResourceDbFolderName = "kresources"
     const val ComposeDefaultResourceProvider_x = "%sDefaultResourceProvider"
 
     fun Project.analysisFile() = File(defaultOutputDir(), "resources.obj")
 
     fun Project.outputSourceDir(variant: String = "") = File(defaultOutputDir(), "src${variant.capitalize()}")
 
-    fun Project.outputResourcesDir() = File(defaultOutputDir(), "resources")
+    //Renamed from outputResourcesDir(): the staged files are wired into the Android variant's
+    //ASSETS pipeline (and KMP target source-sets' resources for non-Android targets), so the
+    //directory name reflects what's actually inside.
+    fun Project.outputAssetsDir() = File(defaultOutputDir(), "assets")
 
     fun Project.defaultOutputDir() = File(layout.buildDirectory.asFile.get(), "generated/kostra")
 
@@ -36,6 +39,14 @@ object KostraPluginConfig {
         const val GenerateResources = "generateResources"
         const val GenerateDefaults = "generateDefaults"
         const val GenerateDatabases = "generateDatabases"
+
+        //Task name template used by tryAddNativeCopyTasks. Formatted with (what, capitalizedBinary).
+        //Currently only one variant is registered:
+        //  - "DBs" → copyDBsToNative<Binary>Output (kostra staging dir → binary out dir; the staging
+        //    dir already includes user binary file resources via GenerateDatabasesTask.stageBinaryFiles)
+        //The "Resources" variant was removed because it duplicated the user-source binary resources
+        //already staged by the DB task — the second slot is preserved in case a future use-case
+        //needs a separate-output variant.
         const val CopyResourcesForNativeTemplate_xy = "copy%sToNative%sOutput"
     }
 }

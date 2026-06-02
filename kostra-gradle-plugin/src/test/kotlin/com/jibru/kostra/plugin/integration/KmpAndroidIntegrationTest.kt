@@ -24,7 +24,11 @@ class KmpAndroidIntegrationTest {
             .withProjectDir(testProjectDir)
             .withGradleVersion(GradleVersionUnderTest)
             .withArguments(
-                ":processAndroidMainJavaRes",
+                //bundleAndroidMainAar is the terminal task for the KMP-Android library variant — it
+                //produces the AAR. Building this exercises the full asset pipeline (variant.sources.assets
+                //registered srcDirs → merged assets → AAR assets/ folder), which is exactly the path the
+                //kostra plugin now relies on.
+                ":bundleAndroidMainAar",
                 "--stacktrace",
                 "--no-configuration-cache",
             )
@@ -34,34 +38,57 @@ class KmpAndroidIntegrationTest {
 
         val generateDatabases = result.task(":generateDatabases")
         val generateResources = result.task(":generateResources")
-        val processJavaRes = result.task(":processAndroidMainJavaRes")
+        val bundleAar = result.task(":bundleAndroidMainAar")
 
         assertAll(
             { assertThat(generateDatabases).isNotNull() },
             { assertThat(generateDatabases?.outcome).isAnyOf(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE) },
             { assertThat(generateResources).isNotNull() },
             { assertThat(generateResources?.outcome).isAnyOf(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE) },
-            { assertThat(processJavaRes).isNotNull() },
-            { assertThat(processJavaRes?.outcome).isAnyOf(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE) },
+            { assertThat(bundleAar).isNotNull() },
+            { assertThat(bundleAar?.outcome).isAnyOf(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE) },
         )
 
-        // Wiring proof #1: generateDatabases must appear before processAndroidMainJavaRes in task graph.
+        // Wiring proof #1: generateDatabases must run before bundleAndroidMainAar.
         val executedTasks = result.tasks.map { it.path }
         val genDbIdx = executedTasks.indexOf(":generateDatabases")
-        val processIdx = executedTasks.indexOf(":processAndroidMainJavaRes")
+        val bundleIdx = executedTasks.indexOf(":bundleAndroidMainAar")
         assertThat(genDbIdx).isGreaterThan(-1)
-        assertThat(processIdx).isGreaterThan(genDbIdx)
+        assertThat(bundleIdx).isGreaterThan(genDbIdx)
 
-        // Wiring proof #2: the generated .db files exist where the plugin places them.
-        val generatedResources = File(testProjectDir, "build/generated/kostra/resources")
+        // Wiring proof #4 (most important): the final AAR has the kostra files under its real
+        // assets/kostra_resources/ folder — proves AGP's assets pipeline picked them up via
+        // KotlinMultiplatformAndroidComponentsExtension.onVariants { variant.sources.assets.addGenerated... }.
+        val aar = File(testProjectDir, "build/outputs/aar").walkTopDown().firstOrNull { it.extension == "aar" }
+        assertThat(aar).isNotNull()
+        val aarEntries = java.util.zip.ZipFile(aar!!).use { zip ->
+            zip.entries().toList().map { it.name }
+        }
+        val aarKostraAssets = aarEntries.filter { it.startsWith("assets/kostra_resources/") && !it.endsWith("/") }
+        assertThat(aarKostraAssets).isNotEmpty()
+
+        // Wiring proof #2: every generated .db lives at <task-output>/kostra_resources/... so it
+        // can be wired into the Android variant's assets pipeline AND every non-Android target's
+        // resources from the same single staging directory.
+        val generatedResources = File(testProjectDir, "build/generated/kostra/assets")
         assertThat(generatedResources.exists()).isTrue()
         val dbFiles = generatedResources.walkTopDown().filter { it.extension == "db" }.toList()
         assertThat(dbFiles).isNotEmpty()
+        val unprefixedDbs = dbFiles.filterNot {
+            it.absolutePath.replace('\\', '/').contains("/kostra_resources/")
+        }
+        assertThat(unprefixedDbs).isEmpty()
 
-        // Wiring proof #3: the .db files are bundled into the variant's processed Java resources.
-        val mergedRes = File(testProjectDir, "build/intermediates/java_res/androidMain")
-        val mergedDbs = mergedRes.walkTopDown().filter { it.extension == "db" }.toList()
+        // Wiring proof #3: the .db files reach the Android variant's mergeAndroidMainAssets
+        // intermediate — confirms AGP's assets pipeline (NOT java_res) is what packages them into
+        // the APK at `assets/kostra_resources/...`.
+        val mergedAssets = File(testProjectDir, "build/intermediates/assets/androidMain/mergeAndroidMainAssets")
+        val mergedDbs = mergedAssets.walkTopDown().filter { it.extension == "db" }.toList()
         assertThat(mergedDbs).isNotEmpty()
+        val unprefixedMerged = mergedDbs.filterNot {
+            it.absolutePath.replace('\\', '/').contains("/kostra_resources/")
+        }
+        assertThat(unprefixedMerged).isEmpty()
     }
 
     private fun writeFixture() {
@@ -113,6 +140,11 @@ class KmpAndroidIntegrationTest {
                     compileSdk = $TestCompileSdk
                     minSdk = $TestMinSdk
                     withHostTestBuilder {}
+                    //Opt into the KMP-Android library's Android resources pipeline so variant.sources.assets
+                    //is non-null and the kostra plugin can wire its staging dir into the AAR's assets/.
+                    androidResources {
+                        enable = true
+                    }
                 }
                 jvmToolchain($TestJvmToolchain)
 

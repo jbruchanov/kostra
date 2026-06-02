@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <application>
+        <!--
+            Auto-installed by AGP manifest merger into consumer apps. Captures Application Context
+            in onCreate() so KostraAndroidContextHolder.get() returns it without manual init.
+            ${applicationId} is replaced per consumer to keep the authority unique.
+        -->
+        <provider
+            android:name="com.jibru.kostra.internal.KostraAndroidContextProvider"
+            android:authorities="${applicationId}.kostra-init"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+
 </manifest>

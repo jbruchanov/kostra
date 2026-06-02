@@ -24,8 +24,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
+import androidx.compose.material.darkColors
 import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -45,12 +47,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.jibru.kostra.KDpi
 import com.jibru.kostra.KLocale
 import com.jibru.kostra.KQualifiers
+import com.jibru.kostra.compose.KostraPreviewInit
 import com.jibru.kostra.compose.LocalQualifiers
 import com.jibru.kostra.icu.FixedDecimal
 import com.sample.app.K
@@ -198,4 +202,14 @@ private fun TextCheckBox(onCheckedChange: (Boolean) -> Unit, checked: Boolean, t
         }
         Text(text)
     }
+}
+
+@Composable
+@Preview(name = "Default")
+@Preview(name = "MDPI", device = "spec:width=411dp,height=891dp,dpi=160")
+@Preview(name = "MDPI cs", locale = "cs", device = "spec:width=411dp,height=891dp,dpi=160")
+@Preview(name = "XHDPI cs", locale = "cs", device = "spec:width=411dp,height=891dp,dpi=480")
+private fun SampleScreenPreview() = MaterialTheme(darkColors()) {
+    KostraPreviewInit()
+    SampleScreen()
 }

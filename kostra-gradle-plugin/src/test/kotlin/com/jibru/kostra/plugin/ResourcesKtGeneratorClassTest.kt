@@ -177,19 +177,19 @@ class ResourcesKtGeneratorClassTest {
             val Resources: KAppResources = KAppResources(
               string = StringDatabase(
                 mapOf(
-                  KLocale.Undefined to "kresources/string-default.db",
-                  KLocale(1_046_035_320_300L) to "kresources/string-cs.db",
-                  KLocale(1_558_592_627_247L) to "kresources/string-en.db",
-                  KLocale(1_558_694_132_478L) to "kresources/string-en-gb.db",
+                  KLocale.Undefined to "string-default.db",
+                  KLocale(1_046_035_320_300L) to "string-cs.db",
+                  KLocale(1_558_592_627_247L) to "string-en.db",
+                  KLocale(1_558_694_132_478L) to "string-en-gb.db",
                 )
               ),
               plural = PluralDatabase(
                 mapOf(
-                  KLocale.Undefined to "kresources/plural-default.db",
-                  KLocale(1_046_035_320_300L) to "kresources/plural-cs.db",
+                  KLocale.Undefined to "plural-default.db",
+                  KLocale(1_046_035_320_300L) to "plural-cs.db",
                 )
               ),
-              binary = FileDatabase("kresources/binary.db"),
+              binary = FileDatabase("binary.db"),
             )
             """.trimIndent(),
         )

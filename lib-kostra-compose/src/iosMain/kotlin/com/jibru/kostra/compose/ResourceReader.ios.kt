@@ -5,4 +5,4 @@ package com.jibru.kostra.compose
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.ResourceReader
 
-internal actual fun jvmResourceReaderOrNull(): ResourceReader? = null
+internal actual fun resourceReaderOrNull(): ResourceReader? = null

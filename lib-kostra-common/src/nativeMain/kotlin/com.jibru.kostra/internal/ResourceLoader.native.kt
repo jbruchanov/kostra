@@ -23,7 +23,10 @@ import platform.posix.getcwd
 import platform.posix.opendir
 import platform.posix.rewind
 
-internal actual fun loadResource(key: String): ByteArray = NativeResourceLoader.readAllBytes(key)
+internal actual fun loadResource(key: String): ByteArray =
+    //Plugin stages every resource under kostra_resources/<key>. Native consumers must arrange the
+    //same layout next to the executable (see README "Native variant").
+    NativeResourceLoader.readAllBytes("${KostraAssets.RootDir}/$key")
 
 private object NativeResourceLoader {
 
