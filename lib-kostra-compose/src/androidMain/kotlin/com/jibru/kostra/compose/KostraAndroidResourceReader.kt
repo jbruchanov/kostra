@@ -62,7 +62,7 @@ internal object KostraAndroidResourceReader : ResourceReader {
             try {
                 return assets.open(path)
             } catch (_: FileNotFoundException) {
-                /* fall through to classloader */
+                // fall through to classloader
             }
         }
         //Classloader fallback for JVM-host unit-test variants (Android source set running on JVM).
