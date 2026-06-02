@@ -1,13 +1,25 @@
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
+    id("com.android.kotlin.multiplatform.library")
     id("com.jibru.kostra.resources")
 }
 
 apply from: "$rootProject.projectDir/../build-ktlint.gradle"
+//Without an android(...) target below this would be a jvm/ios-only KMP module. When consumed by
+//an Android app, KMP variant resolution would fall back to the lib's jvm jar — the kostra
+//plugin's per-target wiring (see KostraPlugin.tryUpdateSourceSets) puts kostra_resources/ inside
+//that jvm jar, and AGP's mergeJavaResources would then merge those into the APK at root,
+//producing `kostra_resources/lib2_*.db` next to /META-INF, /AndroidManifest.xml, etc.
+//Adding android(...) routes this lib's kostra files through AGP's assets pipeline instead, so
+//they land at `apk assets/kostra_resources/…` like every other Android-bearing kostra module.
+apply from: "$rootProject.projectDir/../build-android-lib.gradle"
 
 kotlin {
     jvm()
 
+    android {
+        namespace = "com.sample.lib2"
+    }
     iosArm64()
     iosSimulatorArm64()
 

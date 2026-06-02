@@ -68,7 +68,15 @@ kotlin {
                 //output in kostra/sample/build/ios/Debug-iphonesimulator/appIos.app/compose-resources/
                 depModules.forEach { Project p ->
                     def srcResources = new File(p.projectDir, "src/commonMain/resources")
-                    def genResources = new File(p.layout.getBuildDirectory().get().asFile, "generated/kostra/resources")
+                    //KostraPluginConfig.outputAssetsDir() = <buildDir>/generated/kostra/assets — the
+                    //per-target wiring in the kostra plugin adds this to each KMP target's resources
+                    //for the OWNING module (so lib1's iosArm64ProcessResources picks it up), but KMP
+                    //does NOT propagate a sub-project's iosMain.resources into a consumer's
+                    //iosMain.resources. We pull each depModule's generated dir into shared's iosMain
+                    //explicitly so the produced .framework actually contains lib1+lib2 kostra DBs.
+                    //(Was previously `generated/kostra/resources`; renamed to `assets` to reflect that
+                    //the same files feed Android's variant.sources.assets pipeline.)
+                    def genResources = new File(p.layout.getBuildDirectory().get().asFile, "generated/kostra/assets")
                     //`srcResources` is a hand-authored source directory — if it's missing that's a
                     //genuine misconfiguration, so fail loudly.
                     if (!srcResources.exists()) {

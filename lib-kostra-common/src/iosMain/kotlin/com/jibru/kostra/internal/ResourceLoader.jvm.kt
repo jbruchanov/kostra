@@ -13,10 +13,13 @@ internal actual fun loadResource(key: String): ByteArray = UIKitResource.readByt
 
 private object UIKitResource {
     @OptIn(ExperimentalForeignApi::class)
-    fun readBytes(path: String): ByteArray {
+    fun readBytes(key: String): ByteArray {
+        //Plugin stages under iosMain.resources at JAR path kostra_resources/<key>; KMP iOS
+        //packages JAR resources under <bundle>/compose-resources/<jar-path>.
+        val jarRelative = "${KostraAssets.RootDir}/$key"
         val fileManager = NSFileManager.defaultManager()
         // todo: support fallback path at bundle root?
-        val composeResourcesPath = NSBundle.mainBundle.resourcePath + "/compose-resources/" + path
+        val composeResourcesPath = NSBundle.mainBundle.resourcePath + "/compose-resources/" + jarRelative
         val contentsAtPath: NSData? = fileManager.contentsAtPath(composeResourcesPath)
         if (contentsAtPath != null) {
             val byteArray = ByteArray(contentsAtPath.length.toInt())
@@ -25,7 +28,7 @@ private object UIKitResource {
             }
             return byteArray
         } else {
-            throw UnableToOpenResourceStream("Path:'$path'\nFullPath:'$composeResourcesPath'")
+            throw UnableToOpenResourceStream("Path:'$key'\nFullPath:'$composeResourcesPath'")
         }
     }
 }

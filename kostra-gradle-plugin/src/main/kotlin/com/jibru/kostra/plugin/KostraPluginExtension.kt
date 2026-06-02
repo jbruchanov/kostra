@@ -67,8 +67,17 @@ abstract class KostraPluginExtension {
      */
     abstract val useFileWatcher: Property<Boolean>
 
+    /**
+     * Filename prefix applied to every Kostra-generated database file (e.g. "lib1_" yields
+     * `assets/kostra_resources/lib1_binary.db`). Derived from [modulePrefix]; empty when no module
+     * prefix is set, in which case DB files sit directly at the root of `kostra_resources/`.
+     *
+     * The name stayed as `outputDatabaseDirName` for source-compat with consumers but the value
+     * is no longer a directory name — there is no longer a `kresources/` sub-folder; DBs live
+     * at the root of the assets/kostra_resources/ tree alongside the binary file resources.
+     */
     val outputDatabaseDirName: Provider<String>
-        get() = modulePrefix.map { it.lowerCasedWith(KostraPluginConfig.ResourceDbFolderName) }.orElse(KostraPluginConfig.ResourceDbFolderName)
+        get() = modulePrefix.map { it.lowerCasedWith("") }.orElse("")
 
     @get:Internal
     abstract val resourceDirs: ListProperty<File>

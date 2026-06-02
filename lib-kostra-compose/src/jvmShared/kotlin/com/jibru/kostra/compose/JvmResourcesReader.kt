@@ -62,6 +62,13 @@ internal object JvmResourcesReader : ResourceReader {
     }
 
     private fun getClassLoader(): ClassLoader {
-        return (this::class as Any).javaClass.classLoader
+        //Prefer the thread context classloader. In Android Studio Compose previews Layoutlib sets
+        //this to the user-module classloader (which has every module's classes.jar on its path,
+        //including `:shared`'s — that's where the kostra plugin puts the resource files at JAR
+        //path `assets/kostra_resources/<...>`). Falling back to this reader's own classloader
+        //isn't enough: lib-kostra-compose's loader doesn't necessarily delegate to the user
+        //module's resources in the preview's isolated classloader graph.
+        return Thread.currentThread().contextClassLoader
+            ?: (this::class as Any).javaClass.classLoader
     }
 }

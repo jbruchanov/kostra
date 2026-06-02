@@ -2,6 +2,7 @@ package com.jibru.kostra.plugin.task
 
 import com.jibru.kostra.KLocale
 import com.jibru.kostra.database.BinaryDatabase
+import com.jibru.kostra.internal.KostraAssets
 import com.jibru.kostra.plugin.KostraPluginConfig
 import com.jibru.kostra.plugin.ResItem
 import com.jibru.kostra.plugin.ResItemsProcessor
@@ -21,6 +22,26 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.ObjectInputStream
 
+/**
+ * Writes the Kostra-managed databases AND stages binary file resources into a single output
+ * directory whose only top-level entry is the [KostraAssets.RootDir] (`kostra_resources/`) subfolder.
+ *
+ * The task's `outputDir` is registered with the platform-appropriate pipeline by [KostraPlugin]:
+ *  - Android variants: `variant.sources.assets.addGeneratedSourceDirectory(...)` — AGP packages
+ *    `kostra_resources/<files>` into APK `assets/kostra_resources/<files>`. The JAR-resources /
+ *    `commonMain.resources` path is deliberately NOT used: it would also propagate to the AAR's
+ *    classes.jar and AGP would then merge those into APK root, polluting it with `kostra_resources/`.
+ *  - Every other KMP target (`jvm`, `iosArm64`, `iosSimulatorArm64`, native, …):
+ *    `compilation.main.defaultSourceSet.resources.srcDir(...)` — files appear at JAR-resource
+ *    path `kostra_resources/<files>` for JVM and at the analogous on-disk path inside the
+ *    processedResources / .framework / .klib output for Kotlin/Native.
+ *  - Standalone executables (KMP target named `"native"`): also copied verbatim next to the
+ *    linked exe via the `copyDBsToNative<Binary>Output` task, since the native runtime resolves
+ *    keys relative to the executable's directory.
+ *
+ * Runtime loaders ([com.jibru.kostra.internal.loadResource]) prepend [KostraAssets.RootDir] to keys
+ * before delegating to the platform reader, so K-class keys stay prefix-free.
+ */
 @DisableCachingByDefault(because = "Database generation is fast and inputs are a generated analysis file")
 abstract class GenerateDatabasesTask : DefaultTask() {
 
@@ -28,6 +49,11 @@ abstract class GenerateDatabasesTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val resourcesAnalysisFile: RegularFileProperty
 
+    /**
+     * Filename prefix for the generated database files (e.g. `"lib1_"` → `lib1_binary.db`). Empty
+     * means "no prefix" → DBs live at the root of [outputDir]/kostra_resources/. The property name
+     * was kept for source-compat with callers; the value is no longer a sub-directory.
+     */
     @get:Input
     @get:Optional
     abstract val databaseDir: Property<String>
@@ -45,15 +71,24 @@ abstract class GenerateDatabasesTask : DefaultTask() {
         val items = ObjectInputStream(FileInputStream(resourcesAnalysisFile.get().asFile)).readObject() as List<ResItem>
         val processor = ResItemsProcessor(items)
         val outDir = outputDir.get().asFile
-        val dbDir = databaseDir.orNull?.let { File(outDir, it) } ?: outDir
+        //Stage everything at <outDir>/kostra_resources/<...>. The plugin wires <outDir>:
+        //  - into AGP's assets pipeline (Android variants) via variant.sources.assets, so AGP
+        //    packages the contents at APK `assets/kostra_resources/<...>` — no APK root entries.
+        //  - into compilation.defaultSourceSet.resources (non-Android KMP targets), so the same
+        //    files appear inside the JVM jar / iOS klib / native processedResources at
+        //    `kostra_resources/<...>`.
+        //Single staging layout keeps every platform reading the same relative paths.
+        val assetRoot = File(outDir, KostraAssets.RootDir)
+        //databaseDir is repurposed as a filename prefix; DBs land at the root of assetRoot.
+        val filePrefix = databaseDir.orNull.orEmpty()
         outDir.deleteRecursively()
-        dbDir.mkdirs()
+        assetRoot.mkdirs()
 
-        saveDataIntoDb(type = "strings", data = processor.stringsForDbs, "${ResItem.String}-%s.db", dbDir)
-        saveDataIntoDb(type = "plurals", data = processor.pluralsForDbs, "${ResItem.Plural}-%s.db", dbDir)
+        saveDataIntoDb(type = "strings", data = processor.stringsForDbs, "$filePrefix${ResItem.String}-%s.db", assetRoot)
+        saveDataIntoDb(type = "plurals", data = processor.pluralsForDbs, "$filePrefix${ResItem.Plural}-%s.db", assetRoot)
 
         run {
-            val db = File(dbDir, "${ResItem.Binary}.db")
+            val db = File(assetRoot, "$filePrefix${ResItem.Binary}.db")
             val data = BinaryDatabase().apply { setPairs(processor.otherForDbs) }.save()
             db.writeBytes(data)
             if (logger.isInfoEnabled) {
@@ -63,6 +98,27 @@ abstract class GenerateDatabasesTask : DefaultTask() {
                     append("Size:${data.size}b")
                 })
             }
+        }
+
+        //Stage every binary file resource alongside the DBs at the same assets/ root so the runtime
+        //loader resolves both DB lookups and binary lookups through the same single staging dir.
+        stageBinaryFiles(items, assetRoot)
+    }
+
+    private fun stageBinaryFiles(items: List<ResItem>, assetRoot: File) {
+        var copied = 0
+        items.asSequence()
+            .filterIsInstance<ResItem.FileRes>()
+            .forEach { item ->
+                //FileRes.value is the relative path String produced by the custom
+                //com.jibru.kostra.plugin.ext.File#relativeTo extension — already the lookup key.
+                val target = File(assetRoot, item.value)
+                target.parentFile.mkdirs()
+                item.file.copyTo(target, overwrite = true)
+                copied++
+            }
+        if (logger.isInfoEnabled) {
+            logger.info("Kostra: staged $copied binary resource(s) under '${assetRoot.absolutePath}'")
         }
     }
 

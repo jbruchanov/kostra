@@ -4,6 +4,10 @@ kotlin {
         minSdk = libs.versions.android.sdk.min.get().toInteger()
 
         withHostTestBuilder {}
+
+        //androidResources.enable = true is auto-enabled by the kostra Gradle plugin (see
+        //KostraPlugin.apply / pluginManager.withPlugin("com.android.kotlin.multiplatform.library")).
+        //Manual opt-in is no longer needed.
     }
 
     jvmToolchain(libs.versions.jvmtarget.get().toInteger())

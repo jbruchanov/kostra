@@ -8,6 +8,6 @@ interface IDefaultQualifiersProvider {
 
 object DefaultQualifiersProvider : IDefaultQualifiersProvider {
     var delegate: IDefaultQualifiersProvider? = null
-
+    val hasOverriddenDefault get() = delegate != null
     override val current: KQualifiers get() = delegate?.current ?: defaultQualifiers()
 }
