@@ -4,6 +4,7 @@ package com.test.kostra.appsample
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,10 +14,17 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,7 +49,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -71,7 +81,24 @@ private object SampleScreenDefaults {
 }
 
 @Composable
-fun SampleScreen(extraContent: @Composable ColumnScope.() -> Unit = {}) = with(SampleScreenDefaults) {
+fun SampleScreen(extraContent: @Composable ColumnScope.() -> Unit = {}) {
+    val showKeyboardBanner = remember { getPlatform().isIos }
+    Box(modifier = Modifier.fillMaxSize()) {
+        SampleScreenContent(extraContent = extraContent)
+        if (showKeyboardBanner) {
+            KeyboardDismissBanner(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SampleScreenContent(
+    extraContent: @Composable ColumnScope.() -> Unit,
+) = with(SampleScreenDefaults) {
     Box(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
@@ -176,6 +203,27 @@ fun SampleScreen(extraContent: @Composable ColumnScope.() -> Unit = {}) = with(S
 
                 Text(stringResource(K.string.plurals) + ": " + (quantity.toDoubleOrNull()?.let { pluralResource(K.plural.bug_x, FixedDecimal(it), quantity) } ?: ""))
                 Text(stringResource(K.string.ordinals) + ": " + (quantity.toDoubleOrNull()?.let { ordinalResource(K.plural.day_x, FixedDecimal(it), quantity) } ?: ""))
+            }
+        }
+    }
+}
+
+@Composable
+private fun KeyboardDismissBanner(modifier: Modifier = Modifier) = with(SampleScreenDefaults) {
+    val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val focusManager = LocalFocusManager.current
+    if (keyboardVisible) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .background(Color.DarkGray)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+                .padding(spacing),
+        ) {
+            Text("Keyboard visible", modifier = Modifier.weight(1f))
+            Button(onClick = { focusManager.clearFocus() }) {
+                Text("Hide")
             }
         }
     }

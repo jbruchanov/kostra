@@ -305,27 +305,27 @@ class KostraPlugin : Plugin<Project> {
                     extension.resourceDirs.set(extension.resourceDirs.get() + commonMainSourceSet.resources.srcDirs)
                 }
 
-                //Per-target resource wiring for non-Android KMP targets. The Android target gets
-                //the staging dir via variant.sources.assets at plugin-apply time. Skip:
-                //  * common (metadata) — its compilation's defaultSourceSet IS commonMain, so we'd
-                //    propagate via KMP inheritance to nativeMain / jvmMain / etc. AND also add it
-                //    to those source sets here, producing duplicate-srcDir errors.
-                //  * androidJvm — covered by the assets pipeline; feeding via kotlin source-set
-                //    would double-package (apk-assets + apk-root).
-                project.extensions.findByType(KotlinMultiplatformExtension::class.java)
-                    ?.targets
-                    ?.forEach { kmpTarget ->
-                        val pt = kmpTarget.platformType
-                        if (pt == org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.common) return@forEach
-                        if (pt == org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm) return@forEach
-                        runCatching {
-                            kmpTarget.compilations
-                                .getByName("main")
-                                .defaultSourceSet
-                                .resources
-                                .srcDir(generateDbsTaskProvider)
-                        }
+            //Per-target resource wiring for non-Android KMP targets. The Android target gets
+            //the staging dir via variant.sources.assets at plugin-apply time. Skip:
+            //  * common (metadata) — its compilation's defaultSourceSet IS commonMain, so we'd
+            //    propagate via KMP inheritance to nativeMain / jvmMain / etc. AND also add it
+            //    to those source sets here, producing duplicate-srcDir errors.
+            //  * androidJvm — covered by the assets pipeline; feeding via kotlin source-set
+            //    would double-package (apk-assets + apk-root).
+            project.extensions.findByType(KotlinMultiplatformExtension::class.java)
+                ?.targets
+                ?.forEach { kmpTarget ->
+                    val pt = kmpTarget.platformType
+                    if (pt == org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.common) return@forEach
+                    if (pt == org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm) return@forEach
+                    runCatching {
+                        kmpTarget.compilations
+                            .getByName("main")
+                            .defaultSourceSet
+                            .resources
+                            .srcDir(generateDbsTaskProvider)
                     }
+                }
         }
 
         run JavaPlugin@{
