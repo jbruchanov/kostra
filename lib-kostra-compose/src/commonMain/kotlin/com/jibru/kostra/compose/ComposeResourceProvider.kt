@@ -4,7 +4,6 @@
 package com.jibru.kostra.compose
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -17,7 +16,6 @@ import com.jibru.kostra.internal.KostraAssets
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.InternalResourceApi
-import org.jetbrains.compose.resources.LocalResourceReader
 import org.jetbrains.compose.resources.ResourceItem
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.resources.vectorResource
@@ -42,30 +40,14 @@ internal fun KResources.composePainter(key: PainterResourceKey, qualifiers: KQua
         val isXml = readerPath.endsWith(".xml") || readerPath.endsWith(".vxml")
         ResolvedPainter(readerPath = readerPath, isXml = isXml, drawable = readerPath.toDrawableResource())
     }
-    val (readerPath, isXml, drawable) = resolved
+    val (_, isXml, drawable) = resolved
 
-    //Compose-Multiplatform's default Android ResourceReader hits AssetManager first and the
-    //classloader only as a fallback — at @Preview time the AssetManager has no kostra files
-    //(KMP-Android library AARs can't ship an `assets/` folder, the files live in the AAR's
-    //classes.jar at JAR path `assets/kostra_resources/<...>`). Install Kostra's classloader-based
-    //reader here so vectorResource/imageResource resolve via the classloader, which DOES find
-    //the file at preview time and at app runtime alike.
-    //
-    //CompositionLocalProvider returns Unit, so use the 1-slot holder idiom to thread the painter
-    //out of the scope. This is the standard Compose workaround for "want a typed return value
-    //from inside a CompositionLocal-scoped block" and is invoked once per resolved (key,
-    //qualifiers) tuple thanks to the surrounding remember.
-    val reader = kostraResourcesReader()
-    val painterSlot = remember { arrayOfNulls<Painter>(1) }
-    CompositionLocalProvider(LocalResourceReader provides reader) {
-        painterSlot[0] = if (isXml) {
-            rememberVectorPainter(vectorResource(drawable))
-        } else {
-            val imageResource = imageResource(drawable)
-            remember(imageResource) { BitmapPainter(imageResource) }
-        }
+    return if (isXml) {
+        rememberVectorPainter(vectorResource(drawable))
+    } else {
+        val imageResource = imageResource(drawable)
+        remember(imageResource) { BitmapPainter(imageResource) }
     }
-    return painterSlot[0] ?: error("Kostra: unable to load painter for key '$key' at '$readerPath'")
 }
 
 private data class ResolvedPainter(val readerPath: String, val isXml: Boolean, val drawable: DrawableResource)
