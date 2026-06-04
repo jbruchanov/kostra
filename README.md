@@ -630,28 +630,62 @@ end up in the APK at the same place they always did. On regular `com.android.app
 under `assets/` as preferred. The runtime resource loader tries both: `AssetManager` first,
 classloader resources as a fallback, so either build-time outcome works.
 
-`AssetManager` requires a `Context`. Because Kostra's resource APIs are context-less by design, the
-library has to obtain an Application Context on its own. It does so in this order:
+All resource reads on every platform go through `KostraResourceStorage` (a `read(key)` /
+`hasFile(key)` interface). Each target ships a default implementation — **JVM**: classloader,
+**Android**: `AssetManager`, **iOS**: `NSBundle`, **native**: filesystem — and a custom one can be
+installed via `KostraResourceStorage.set(...)`. On Android the resolution order is:
 
-1. **`KostraAndroidContextProvider`** — a one-method `ContentProvider` declared in lib-kostra-common's
-   `AndroidManifest.xml`. AGP manifest-merges it into every consumer APK; Android instantiates it during
-   `Application#attach`, before any `Activity`, so the context is available before any Kostra call.
-2. **Manual override** — `KostraAndroidContextHolder.set(applicationContext)` from your `Application.onCreate()`.
-   Use this if your build strips library content providers (e.g. `tools:node="remove"`, multi-process
-   restrictions, custom instrumentation, or any host that initializes Kostra before the auto-provider can
-   run). The setter rejects `Activity` instances (and `ContextWrapper` chains that bottom out at an
-   `Activity`) to prevent permanent leaks.
-3. **Last-resort fallback** — reflection on the internal `android.app.ActivityThread.currentApplication()`.
-   The same trick AndroidX uses; not officially supported but reliable in practice.
+1. **Installed storage** — an `AssetManager`-backed storage, installed by either:
+   - **`KostraAndroidContextProvider`** — a one-method `ContentProvider` declared in lib-kostra-common's
+     `AndroidManifest.xml`. AGP manifest-merges it into every consumer APK; Android instantiates it during
+     `Application#attach`, before any `Activity`, so it's set before any Kostra call.
+   - **Manual override** — `KostraResourceStorage.set(applicationContext)` from your `Application.onCreate()`
+     (use this if your build strips library content providers), or `KostraPreviewInit()` inside a `@Preview`.
+     `set(Context)` keeps only the application `AssetManager` (not the `Context`) and rejects `Activity`
+     instances (and `ContextWrapper` chains bottoming out at one) to prevent permanent leaks.
+2. **Classloader** — resources on the JAR classpath (covers the AGP-9 KMP caveat above and `@Preview`).
+3. **`-Dkostra.resourcesRoot` filesystem fallback** — see *Unit testing* below.
 
-If none of the above produce a Context, the first resource load throws `UnableToOpenResourceStream` with
-an `IllegalStateException` cause that explains exactly what to fix (declare the provider, or call
-`KostraAndroidContextHolder.set`).
+If none resolve the key, the read throws `UnableToOpenResourceStream` with a diagnostic explaining
+what to fix.
 
 *Why this is a "hack":* loading from `assets/` is not the canonical KMP way (Kotlin's official model
 puts resources on the classpath). It is the practical workaround that the broader Compose Multiplatform
 ecosystem also adopted; until KMP fixes commonMain JVM resource visibility on Android, this is the
 mechanism Kostra uses.
+
+#### Unit testing
+
+**JVM (`jvmTest`)** works out of the box: the default classloader storage finds the staged resources
+on the test classpath — no setup needed.
+
+**Android JVM-host unit tests** (`testAndroidHostTest`, or `test<Variant>UnitTest`) are the tricky
+case. They run on the local JVM, so there's **no `AssetManager`**, and the kostra DBs ship via the APK
+**assets pipeline** rather than as JAR-classpath resources — so neither the AssetManager storage nor
+the classloader fallback can find them. To bridge that, Kostra reads a directory from the
+**`kostra.resourcesRoot` system property** and serves resources from disk beneath it
+(`<root>/kostra_resources/<key>`).
+
+You normally **don't set this yourself** — the Kostra Gradle plugin does it automatically: when an
+Android plugin is applied, it points every `Test` task at the generated assets dir
+(`build/generated/kostra/assets`) and makes them depend on `generateDatabases`:
+
+```kotlin
+// done by the kostra plugin; shown for reference only
+test.dependsOn("generateDatabases")
+test.systemProperty("kostra.resourcesRoot", "<module>/build/generated/kostra/assets")
+```
+
+So Android host tests that touch kostra resources just work after applying the plugin. For a custom
+host (no kostra plugin, or a bespoke layout) you can either set `-Dkostra.resourcesRoot=<dir>`
+yourself, or install any storage directly before the first resource access:
+
+```kotlin
+KostraResourceStorage.set(object : KostraResourceStorage {
+    override fun read(key: String) = File(myRoot, key).readBytes()           // key = "kostra_resources/<...>"
+    override fun hasFile(key: String) = File(myRoot, key).isFile
+})
+```
 
 ## License
 

@@ -21,7 +21,7 @@ import androidx.compose.runtime.Composable
  *
  * Platform behaviour:
  *  - **Android**: installs `LocalContext.current` into
- *    [com.jibru.kostra.internal.KostraAndroidContextHolder]. Required because Android Studio's
+ *    [com.jibru.kostra.internal.KostraResourceStorage]. Required because Android Studio's
  *    `@Preview` host does NOT instantiate library `ContentProvider`s, so the auto-installer
  *    `KostraAndroidContextProvider` never fires and Kostra's asset lookups would otherwise throw.
  *    Intended for `@Preview` only — at app runtime the ContentProvider has already installed the
@@ -32,4 +32,4 @@ import androidx.compose.runtime.Composable
  *    state.
  */
 @Composable
-expect fun KostraPreviewInit()
+expect fun KostraPreviewEffect()

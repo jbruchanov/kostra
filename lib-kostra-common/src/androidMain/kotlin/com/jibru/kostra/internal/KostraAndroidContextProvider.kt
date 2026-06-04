@@ -10,15 +10,15 @@ import android.net.Uri
  *
  * Declared in lib-kostra-common's AndroidManifest with a stable `${applicationId}.kostra-init`
  * authority (auto-merged into consumer apps by AGP). Android runs ContentProvider.onCreate() during
- * Application#attach, before any Activity, so [AndroidContextHolder] is always populated before
- * user code can call into Kostra.
+ * Application#attach, before any Activity, so [KostraResourceStorage] is always populated
+ * before user code can call into Kostra.
  *
  * All other ContentProvider methods are no-ops — this provider is a one-shot context-capture hook,
  * not a data source.
  */
 class KostraAndroidContextProvider : ContentProvider() {
     override fun onCreate(): Boolean {
-        context?.let { KostraAndroidContextHolder.set(it.applicationContext ?: it) }
+        context?.let { KostraResourceStorage.set(it.applicationContext ?: it) }
         return true
     }
 

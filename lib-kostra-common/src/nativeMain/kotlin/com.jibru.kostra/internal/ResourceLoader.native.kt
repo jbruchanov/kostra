@@ -23,12 +23,20 @@ import platform.posix.getcwd
 import platform.posix.opendir
 import platform.posix.rewind
 
-internal actual fun loadResource(key: String): ByteArray =
-    //Plugin stages every resource under kostra_resources/<key>. Native consumers must arrange the
-    //same layout next to the executable (see README "Native variant").
-    NativeResourceLoader.readAllBytes("${KostraAssets.RootDir}/$key")
+internal actual val platformDefaultResourceStorage: KostraResourceStorage = NativeResourceStorage
 
-private object NativeResourceLoader {
+/**
+ * [KostraResourceStorage] reading from the filesystem next to the executable. The kostra plugin
+ * stages every resource at `kostra_resources/<key>`; native consumers must arrange the same layout
+ * next to the executable (see README "Native variant"). [key] arrives already prefixed with the
+ * assets root.
+ */
+private object NativeResourceStorage : KostraResourceStorage {
+
+    //readAllBytes throws (requireNotNull on fopen) for a missing key.
+    override fun read(key: String): ByteArray = readAllBytes(resolve(key))
+
+    private fun resolve(key: String): String = "$currentDir$pathSeparator$key"
 
     private val currentDir by lazy {
         val dir = opendir(".")
@@ -47,8 +55,7 @@ private object NativeResourceLoader {
         seps.minBy { currentDir.indexOf(it).takeIf { i -> i != -1 } ?: Int.MAX_VALUE }
     }
 
-    fun readAllBytes(fileName: String): ByteArray {
-        val path = "${currentDir}${pathSeparator}$fileName"
+    private fun readAllBytes(path: String): ByteArray {
         //b very important to binary reading, otherwise might end before real end of file
         val file: CPointer<FILE>? = fopen(path, "rb")
         requireNotNull(file) { "Unable to open '$path'" }

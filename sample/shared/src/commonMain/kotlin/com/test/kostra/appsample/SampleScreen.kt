@@ -64,7 +64,7 @@ import androidx.compose.ui.unit.dp
 import com.jibru.kostra.KDpi
 import com.jibru.kostra.KLocale
 import com.jibru.kostra.KQualifiers
-import com.jibru.kostra.compose.KostraPreviewInit
+import com.jibru.kostra.compose.KostraPreviewEffect
 import com.jibru.kostra.compose.LocalQualifiers
 import com.jibru.kostra.icu.FixedDecimal
 import com.sample.app.K
@@ -258,6 +258,6 @@ private fun TextCheckBox(onCheckedChange: (Boolean) -> Unit, checked: Boolean, t
 @Preview(name = "MDPI cs", locale = "cs", device = "spec:width=411dp,height=891dp,dpi=160")
 @Preview(name = "XHDPI cs", locale = "cs", device = "spec:width=411dp,height=891dp,dpi=480")
 private fun SampleScreenPreview() = MaterialTheme(darkColors()) {
-    KostraPreviewInit()
+    KostraPreviewEffect()
     SampleScreen()
 }

@@ -2,10 +2,11 @@ package com.jibru.kostra.compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import com.jibru.kostra.internal.KostraAndroidContextHolder
+import com.jibru.kostra.internal.KostraResourceStorage
+import com.jibru.kostra.internal.set
 
 @Composable
-actual fun KostraPreviewInit() {
+actual fun KostraPreviewEffect() {
     //Prefer applicationContext over the per-render stub. Compose Multiplatform's
     //PreviewContextConfigurationEffect uses the same shape (`LocalContext.current.applicationContext`)
     //since the BridgeContext layoutlib hands to LocalContext.current is short-lived and rebuilt
@@ -16,10 +17,10 @@ actual fun KostraPreviewInit() {
     //is typically empty (see the diagnostic added in ResourceLoader.android.kt). The actual
     //preview-time delivery path for kostra files is the JVM-classpath fallback inside
     //AndroidResourceImpl, not this AssetManager — but installing the Context is still the right
-    //thing to do, because it lets [KostraAndroidContextHolder]-based callers (image readers,
+    //thing to do, because it lets [KostraResourceStorage]-based callers (image readers,
     //tests) work in preview too the moment AGP/layoutlib starts populating the preview assets.
     //
     //Falls back to LocalContext.current if .applicationContext is null (custom preview hosts).
     val ctx = LocalContext.current
-    KostraAndroidContextHolder.set(ctx.applicationContext ?: ctx)
+    KostraResourceStorage.set(ctx.applicationContext ?: ctx)
 }
