@@ -140,7 +140,7 @@ class KostraPlugin : Plugin<Project> {
         //
         //AGP places the dir's contents at APK `assets/kostra_resources/<...>` (the real assets/
         //folder, not apk-root). At runtime `AssetManager.open("kostra_resources/<key>")` reads it
-        //via KostraAndroidContextHolder → ResourceLoader.android.kt.
+        //via KostraResourceStorage → its Android default storage / installed AssetManager.
         //
         //Two extension types are tried in turn, because they don't overlap and a module applies
         //at most one Android plugin variant:
@@ -177,6 +177,28 @@ class KostraPlugin : Plugin<Project> {
             ?.let { kmpAndroid -> kmpAndroid.onVariants { variant -> androidSetup(variant) } }
             ?: target.extensions.findByType(AndroidComponentsExtension::class.java)
                 ?.onVariants { variant -> androidSetup(variant) }
+
+        //Android JVM-host unit tests (`testAndroidHostTest`, `test<Variant>UnitTest`) have no
+        //AssetManager and the kostra DBs aren't on their classpath (they ship via the APK assets
+        //pipeline), so the classloader fallback can't find them. Point kostra's runtime filesystem
+        //fallback at the generated assets dir so host tests resolve resources from disk — no
+        //per-project wiring needed. Only relevant to Android (the property is inert elsewhere), so
+        //gate on an Android plugin being applied. `withType<Test>` also covers a sibling jvm target's
+        //test task, which simply ignores the property (its classloader storage already works).
+        val assetsRoot = target.outputAssetsDir().absolutePath
+        listOf(
+            "com.android.kotlin.multiplatform.library",
+            "com.android.library",
+            "com.android.application",
+        ).forEach { androidPluginId ->
+            target.plugins.withId(androidPluginId) {
+                target.tasks.withType(org.gradle.api.tasks.testing.Test::class.java).configureEach { test ->
+                    test.dependsOn(generateDbsTaskTaskProvider)
+                    //Shared runtime constant from :kostra-common (single source of truth).
+                    test.systemProperty(com.jibru.kostra.internal.KostraResourceRootProperty, assetsRoot)
+                }
+            }
+        }
 
         target.afterEvaluate { project ->
             if (extension.autoConfig.get()) {

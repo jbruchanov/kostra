@@ -9,26 +9,27 @@ import platform.Foundation.NSData
 import platform.Foundation.NSFileManager
 import platform.posix.memcpy
 
-internal actual fun loadResource(key: String): ByteArray = UIKitResource.readBytes(key)
+internal actual val platformDefaultResourceStorage: KostraResourceStorage = NSBundleResourceStorage
 
-private object UIKitResource {
+/**
+ * [KostraResourceStorage] backed by the iOS app bundle. KMP packages JAR resources under
+ * `<bundle>/compose-resources/<jar-path>`, and the kostra plugin stages at `kostra_resources/<key>`,
+ * so a [key] of `kostra_resources/<x>` maps to `<resourcePath>/compose-resources/kostra_resources/<x>`.
+ */
+private object NSBundleResourceStorage : KostraResourceStorage {
+
     @OptIn(ExperimentalForeignApi::class)
-    fun readBytes(key: String): ByteArray {
-        //Plugin stages under iosMain.resources at JAR path kostra_resources/<key>; KMP iOS
-        //packages JAR resources under <bundle>/compose-resources/<jar-path>.
-        val jarRelative = "${KostraAssets.RootDir}/$key"
-        val fileManager = NSFileManager.defaultManager()
-        // todo: support fallback path at bundle root?
-        val composeResourcesPath = NSBundle.mainBundle.resourcePath + "/compose-resources/" + jarRelative
-        val contentsAtPath: NSData? = fileManager.contentsAtPath(composeResourcesPath)
-        if (contentsAtPath != null) {
-            val byteArray = ByteArray(contentsAtPath.length.toInt())
-            byteArray.usePinned {
-                memcpy(it.addressOf(0), contentsAtPath.bytes, contentsAtPath.length)
-            }
-            return byteArray
-        } else {
-            throw UnableToOpenResourceStream("Path:'$key'\nFullPath:'$composeResourcesPath'")
+    override fun read(key: String): ByteArray {
+        val path = fullPath(key)
+        val contents: NSData = NSFileManager.defaultManager().contentsAtPath(path)
+            ?: throw UnableToOpenResourceStream("Key:'$key'\nFullPath:'$path'")
+        val bytes = ByteArray(contents.length.toInt())
+        if (bytes.isNotEmpty()) {
+            bytes.usePinned { memcpy(it.addressOf(0), contents.bytes, contents.length) }
         }
+        return bytes
     }
+
+    private fun fullPath(key: String): String =
+        NSBundle.mainBundle.resourcePath + "/compose-resources/" + key
 }

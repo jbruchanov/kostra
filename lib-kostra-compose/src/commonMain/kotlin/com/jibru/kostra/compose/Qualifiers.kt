@@ -8,8 +8,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.intl.Locale
 import com.jibru.kostra.DefaultQualifiersProvider
 import com.jibru.kostra.KDpi
-import com.jibru.kostra.KLocale
 import com.jibru.kostra.KQualifiers
+import com.jibru.kostra.compose.ext.toKLocale
 
 /**
  * Kostra qualifiers active in the current composition.
@@ -53,9 +53,3 @@ fun ProvideLocalQualifiers(qualifiers: KQualifiers = DefaultQualifiersProvider.c
         content()
     }
 }
-
-internal fun Locale.toKLocale(): KLocale = KLocale(
-    language = language,
-    region = region.takeIf { it.isNotEmpty() },
-    script = script.takeIf { it.isNotEmpty() },
-)
