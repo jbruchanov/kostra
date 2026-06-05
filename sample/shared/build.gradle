@@ -33,6 +33,7 @@ kotlin {
         }
     }
 
+    iosArm64()
     iosSimulatorArm64()
 
     applyDefaultHierarchyTemplate()
@@ -63,35 +64,15 @@ kotlin {
 
         iosMain {
             sourceSets {
-                //add explicit reference to use module resources + kostra resources as part of this build
-                //output in kostra/sample/build/ios/Debug-iphonesimulator/appIos.app/compose-resources/
+                //KMP doesn't merge a sub-project's iosMain.resources into a consumer's static
+                //framework, and the iOS runtime reads <app>/compose-resources/kostra_resources/<key>.
+                //Pull each dep module's generated kostra assets (string/plural DBs + staged binary
+                //files, already under kostra_resources/) into shared's iosMain. The generated dir is
+                //a BUILD OUTPUT of <p>:generateDatabases; the generateDatabases.dependsOn(...) at the
+                //bottom guarantees it's populated before any iOS resource packaging runs, so a srcDir
+                //that doesn't exist yet at sync time (treated as empty) is fine.
                 depModules.forEach { Project p ->
-                    def srcResources = new File(p.projectDir, "src/commonMain/resources")
-                    //KostraPluginConfig.outputAssetsDir() = <buildDir>/generated/kostra/assets — the
-                    //per-target wiring in the kostra plugin adds this to each KMP target's resources
-                    //for the OWNING module (so lib1's iosArm64ProcessResources picks it up), but KMP
-                    //does NOT propagate a sub-project's iosMain.resources into a consumer's
-                    //iosMain.resources. We pull each depModule's generated dir into shared's iosMain
-                    //explicitly so the produced .framework actually contains lib1+lib2 kostra DBs.
-                    //(Was previously `generated/kostra/resources`; renamed to `assets` to reflect that
-                    //the same files feed Android's variant.sources.assets pipeline.)
                     def genResources = new File(p.layout.getBuildDirectory().get().asFile, "generated/kostra/assets")
-                    //`srcResources` is a hand-authored source directory — if it's missing that's a
-                    //genuine misconfiguration, so fail loudly.
-                    if (!srcResources.exists()) {
-                        throw new IllegalStateException("IOS shared depends on ${p.name} resources, but ${srcResources.absolutePath} doesn't exist!")
-                    }
-                    //`genResources` is a BUILD OUTPUT (produced by ${p.name}:generateDatabases). On a
-                    //clean checkout — and during every Android Studio / IDE Gradle sync, which fetches
-                    //the project model BEFORE running any task — this directory legitimately doesn't
-                    //exist yet. Throwing here made sync fail with
-                    //"IOS shared depends on shared-lib1 resources, but …/generated/kostra/resources
-                    //doesn't exist!". Gradle tolerates a `srcDir` that points at a not-yet-created
-                    //directory (it's treated as empty until populated), and the explicit
-                    //`generateDatabases.dependsOn(:shared-lib1:generateDatabases, …)` at the bottom of
-                    //this file guarantees it IS populated before any iOS resource packaging runs. So
-                    //just register it unconditionally — no existence check needed.
-                    resources.srcDirs(srcResources)
                     resources.srcDirs(genResources)
                 }
             }
