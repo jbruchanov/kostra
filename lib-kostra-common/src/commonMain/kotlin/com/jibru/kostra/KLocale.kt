@@ -2,7 +2,6 @@
 
 package com.jibru.kostra
 
-import com.jibru.kostra.ext.takeIfNotEmpty
 import kotlin.jvm.JvmInline
 
 // --- Character encoding constants ---
