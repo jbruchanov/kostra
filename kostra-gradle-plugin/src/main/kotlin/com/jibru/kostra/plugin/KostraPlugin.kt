@@ -7,6 +7,7 @@ import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
 import com.jibru.kostra.plugin.KostraPluginConfig.defaultOutputDir
 import com.jibru.kostra.plugin.KostraPluginConfig.fileWatcherLog
+import com.jibru.kostra.plugin.KostraPluginConfig.outputAssetsDir
 import com.jibru.kostra.plugin.KostraPluginConfig.outputSourceDir
 import com.jibru.kostra.plugin.ext.appendLog
 import com.jibru.kostra.plugin.ext.hasComposePlugin
@@ -210,6 +211,7 @@ class KostraPlugin : Plugin<Project> {
                     generateDbsTaskProvider = generateDbsTaskTaskProvider,
                 )
                 tryAddNativeCopyTasks(project, generateDbsTaskTaskProvider)
+                tryAddNativeDependencyResources(project, extension, generateDbsTaskTaskProvider)
             }
             updateFileWatcher(target, extension)
         }
@@ -291,6 +293,65 @@ class KostraPlugin : Plugin<Project> {
                 }
                 wireDeps(dbsCopy, capitalizedName)
             }
+    }
+
+    /**
+     * Bundle dependency modules' Kostra resources into this module's native targets.
+     *
+     * KMP does NOT merge a dependency's native resources into a consumer's static framework
+     * (compose-multiplatform#3391), so an iOS framework that depends on other Kostra modules can't
+     * see their `kostra_resources/<...>` at runtime (iOS reads
+     * `<app>/compose-resources/kostra_resources/<key>`). For each project path in
+     * [KostraPluginExtension.nativeResourceDependencies] this:
+     *  - adds the dependency's generated assets dir (its `generateDatabases` output) to every
+     *    [KotlinNativeTarget]'s main resources, so the dependency's `kostra_resources/` tree is
+     *    packaged alongside this module's own; and
+     *  - makes this module's `generateDatabases` depend on the dependency's. The per-target wiring
+     *    in [tryUpdateSourceSets] already makes native resource packaging depend on this module's
+     *    `generateDatabases`, so this completes the chain: packaging → own generateDatabases → dep
+     *    generateDatabases, guaranteeing the dependency's assets exist before they're read.
+     *
+     * The dependency assets dir is added as a plain path (not a task output): it may not exist at
+     * configuration time (treated as empty then), and the dependsOn chain above guarantees it's
+     * populated before any native resource packaging reads it. This mirrors the manual per-module
+     * wiring it replaces.
+     */
+    private fun tryAddNativeDependencyResources(
+        project: Project,
+        extension: KostraPluginExtension,
+        generateDbsTaskProvider: TaskProvider<GenerateDatabasesTask>,
+    ) {
+        val depPaths = extension.nativeResourceDependencies.get()
+        if (depPaths.isEmpty()) return
+
+        val nativeTargets = project.extensions.findByType(KotlinMultiplatformExtension::class.java)
+            ?.targets
+            ?.filterIsInstance<KotlinNativeTarget>()
+            .orEmpty()
+        if (nativeTargets.isEmpty()) return
+
+        depPaths.forEach { depPath ->
+            val depProject = project.findProject(depPath)
+            if (depProject == null) {
+                project.logger.warn(
+                    "Kostra: ${project.path} nativeResourceDependencies references unknown project '$depPath' — skipping.",
+                )
+                return@forEach
+            }
+            val depAssetsDir = depProject.outputAssetsDir()
+            nativeTargets.forEach { nativeTarget ->
+                runCatching {
+                    nativeTarget.compilations
+                        .getByName("main")
+                        .defaultSourceSet
+                        .resources
+                        .srcDir(depAssetsDir)
+                }
+            }
+            generateDbsTaskProvider.configure {
+                it.dependsOn("$depPath:${KostraPluginConfig.Tasks.GenerateDatabases}")
+            }
+        }
     }
 
     private fun tryUpdateSourceSets(

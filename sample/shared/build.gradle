@@ -61,29 +61,17 @@ kotlin {
 
         jvmMain
         androidMain
-
-        iosMain {
-            sourceSets {
-                //KMP doesn't merge a sub-project's iosMain.resources into a consumer's static
-                //framework, and the iOS runtime reads <app>/compose-resources/kostra_resources/<key>.
-                //Pull each dep module's generated kostra assets (string/plural DBs + staged binary
-                //files, already under kostra_resources/) into shared's iosMain. The generated dir is
-                //a BUILD OUTPUT of <p>:generateDatabases; the generateDatabases.dependsOn(...) at the
-                //bottom guarantees it's populated before any iOS resource packaging runs, so a srcDir
-                //that doesn't exist yet at sync time (treated as empty) is fine.
-                depModules.forEach { Project p ->
-                    def genResources = new File(p.layout.getBuildDirectory().get().asFile, "generated/kostra/assets")
-                    resources.srcDirs(genResources)
-                }
-            }
-        }
-
     }
 }
 
 kostra {
     KClassName = "com.sample.app.K"
     interfaces = true
+    //Bundle each dependency module's generated kostra resources into shared's native (iOS) targets
+    //and order shared's generateDatabases after each dependency's. KMP doesn't merge a dependency's
+    //resources into a consumer's static framework (compose-multiplatform#3391); this replaces the
+    //former manual iosMain resources.srcDirs wiring + generateDatabases.dependsOn.
+    nativeResourceDependencies = depModules*.path
     resourcesDefaults.value(ResourcesDefaults.values().toList())
     //Sample resources intentionally exercise partial-translation cases
     //(`en-rUS` / `en-rGB` variants without a separate base `en.xml`), so
@@ -99,11 +87,6 @@ kostra {
         resourceDirs.add(file("src/commonMain/resources_strings"))
     }
 }
-
-
-//just ensure that lib DBs are created with 'shared' module DB
-tasks.getByName("generateDatabases")
-    .dependsOn(":shared-lib1:generateDatabases", ":shared-lib2:generateDatabases")
 
 //Android Studio renders previews by instantiating composables against the
 //Android target's runtime classpath. `ui-tooling` is the preview-runtime

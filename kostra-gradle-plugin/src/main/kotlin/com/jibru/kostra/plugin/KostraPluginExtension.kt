@@ -44,6 +44,23 @@ abstract class KostraPluginExtension {
     abstract val modulePrefix: Property<String>
 
     /**
+     * Project paths (e.g. `":shared-lib1"`) of Kostra-bearing dependency modules whose resources
+     * must be bundled into THIS module's native (Kotlin/Native) outputs.
+     *
+     * KMP does not merge a dependency module's native resources into a consumer's static framework
+     * (compose-multiplatform#3391). A JVM consumer gets a dependency's resources via its JAR and an
+     * Android consumer via AAR asset merging, but a Kotlin/Native consumer (e.g. an iOS static
+     * framework) does not — so a module that depends on other Kostra modules and ships a native
+     * target must list them here. For each path the plugin wires that module's generated
+     * `kostra_resources/<...>` assets into every native target's main resources and makes this
+     * module's `generateDatabases` depend on the dependency's, so the assets are generated before
+     * any native resource packaging runs.
+     *
+     * Has no effect on JVM/Android targets. Empty by default.
+     */
+    abstract val nativeResourceDependencies: ListProperty<String>
+
+    /**
      * Define what defaults helpers should be generated.
      */
     abstract val resourcesDefaults: ListProperty<ResourcesDefaults>
