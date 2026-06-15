@@ -212,6 +212,7 @@ class KostraPlugin : Plugin<Project> {
                 )
                 tryAddNativeCopyTasks(project, generateDbsTaskTaskProvider)
                 tryAddNativeDependencyResources(project, extension, generateDbsTaskTaskProvider)
+                tryAddAppleNativeExecutableResources(project, extension, generateDbsTaskTaskProvider)
             }
             updateFileWatcher(target, extension)
         }
@@ -293,6 +294,85 @@ class KostraPlugin : Plugin<Project> {
                 }
                 wireDeps(dbsCopy, capitalizedName)
             }
+    }
+
+    /**
+     * SwiftPM-aligned resource staging for Apple executable binaries (primarily the iOS
+     * simulator **test** binary).
+     *
+     * Unlike the console `native` target (handled by [tryAddNativeCopyTasks], which reads next to
+     * the executable at `<bin>/kostra_resources/<key>`), Apple binaries resolve resources via
+     * `NSBundle.mainBundle.resourcePath + "/compose-resources/" + key` (see ResourceLoader iosMain).
+     * For an iOS simulator test the bundle path IS the binary's output directory, so we must stage
+     * the `kostra_resources/` tree at `<bin>/compose-resources/kostra_resources/<key>`.
+     *
+     * Compose Multiplatform's `copyTestComposeResourcesFor<Target>` only copies the
+     * `composeResources/` tree (not plain kostra resources), and under SwiftPM (no CocoaPods
+     * resource pipeline) nothing else stages them next to the test binary. This task fills that gap:
+     *  - copies this module's own generated DBs PLUS every [KostraPluginExtension.nativeResourceDependencies]
+     *    dependency's `kostra_resources/` tree into `<bin>/compose-resources/`;
+     *  - runs after the link task and after Compose's resource copy (so it never clobbers
+     *    `composeResources/`), and is wired as a dependency of the per-target test task so the DBs
+     *    are present at execution time.
+     *
+     * The literal `native` console target is excluded — it has its own (cwd-relative) layout.
+     */
+    private fun tryAddAppleNativeExecutableResources(
+        project: Project,
+        extension: KostraPluginExtension,
+        generateDbTaskProvider: TaskProvider<GenerateDatabasesTask>,
+    ) {
+        val appleTargets = project.extensions.findByType(KotlinMultiplatformExtension::class.java)
+            ?.targets
+            ?.filterIsInstance<KotlinNativeTarget>()
+            ?.filter { it.konanTarget.family.isAppleFamily && it.name != "native" }
+            .orEmpty()
+        if (appleTargets.isEmpty()) return
+
+        val depPaths = extension.nativeResourceDependencies.get()
+        val depAssetsDirs = depPaths.mapNotNull { project.findProject(it)?.outputAssetsDir() }
+
+        appleTargets.forEach { target ->
+            val targetName = target.name.replaceFirstChar { it.uppercase() }
+            target.binaries.filterIsInstance<AbstractExecutable>().forEach { binary ->
+                val binaryName = binary.name.replaceFirstChar { it.uppercase() }
+                val composeResourcesDir = File(binary.outputDirectory, "compose-resources")
+                val copyTask = project.tasks.register(
+                    "copyKostraComposeResourcesFor$binaryName$targetName",
+                    Copy::class.java,
+                ) { copy ->
+                    copy.group = KostraPluginConfig.Tasks.Group
+                    //GenerateDatabasesTask.outputDir holds the full `kostra_resources/<...>` tree;
+                    //copying it (own + each dependency's) into `compose-resources/` yields exactly
+                    //`compose-resources/kostra_resources/<key>` — the iOS NSBundle lookup path.
+                    copy.from(generateDbTaskProvider)
+                    depAssetsDirs.forEach { dir -> copy.from(dir) }
+                    copy.into(composeResourcesDir)
+                }
+                depPaths.forEach { depPath ->
+                    copyTask.configure { it.dependsOn("$depPath:${KostraPluginConfig.Tasks.GenerateDatabases}") }
+                }
+
+                //Names follow KMP conventions:
+                //  link task : link<BinaryName><TargetName>  e.g. linkDebugTestIosSimulatorArm64
+                //  compose   : copyTestComposeResourcesFor<TargetName>
+                //  test task : <targetName>Test              e.g. iosSimulatorArm64Test
+                val linkTaskName = "link$binaryName$targetName"
+                val composeCopyName = "copyTestComposeResourcesFor$targetName"
+                val testTaskName = "${target.name}Test"
+                copyTask.configure { c ->
+                    runCatching { c.mustRunAfter(project.tasks.named(linkTaskName)) }
+                    runCatching { c.mustRunAfter(project.tasks.named(composeCopyName)) }
+                }
+                runCatching {
+                    project.tasks.named(testTaskName).configure { it.dependsOn(copyTask) }
+                }.onFailure {
+                    //No test task (e.g. device target with tests disabled) — fall back to staging at
+                    //link time so a framework consumer still gets the files next to the binary.
+                    runCatching { project.tasks.named(linkTaskName).configure { it.dependsOn(copyTask) } }
+                }
+            }
+        }
     }
 
     /**
