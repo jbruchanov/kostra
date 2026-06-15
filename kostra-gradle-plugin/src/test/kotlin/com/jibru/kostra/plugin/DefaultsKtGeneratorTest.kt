@@ -9,6 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
+import org.junit.jupiter.params.support.ParameterDeclarations
 import test.IOTestTools
 import java.io.File
 import java.util.stream.Stream
@@ -62,7 +63,7 @@ class DefaultsKtGeneratorTest : IOTestTools {
 }
 
 private class ComposeDefaultsArgsProvider : ArgumentsProvider {
-    override fun provideArguments(context: ExtensionContext): Stream<out Arguments> {
+    override fun provideArguments(parameters: ParameterDeclarations, context: ExtensionContext): Stream<out Arguments> {
         return Stream.of(*Items)
     }
 
