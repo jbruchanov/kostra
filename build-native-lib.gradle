@@ -1,8 +1,12 @@
 ext.createNativeTarget = { kmpExtension ->
     def hostOs = System.getProperty("os.name")
+    //"aarch64" on Apple Silicon, "x86_64"/"amd64" on Intel. Build for the host's own arch so an
+    //Intel host (e.g. x64 macOS CI) still builds AND runs its native binary — it can't execute an
+    //arm64 one (Rosetta only runs x64 on Apple Silicon, not the reverse).
+    def isArm = System.getProperty("os.arch") == "aarch64"
     def isMingwX64 = hostOs.startsWith("Windows")
     def nativeTarget
-    if (hostOs == "Mac OS X") nativeTarget = kmpExtension.macosX64('native')
+    if (hostOs == "Mac OS X") nativeTarget = isArm ? kmpExtension.macosArm64('native') : kmpExtension.macosX64('native')
     else if (hostOs == "Linux") nativeTarget = kmpExtension.linuxX64("native")
     else if (isMingwX64) nativeTarget = kmpExtension.mingwX64("native")
     else throw new GradleException("Host OS is not supported in Kotlin/Native.")

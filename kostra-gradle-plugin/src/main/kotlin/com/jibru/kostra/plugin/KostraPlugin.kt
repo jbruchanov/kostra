@@ -226,8 +226,9 @@ class KostraPlugin : Plugin<Project> {
      *
      * Convention this hook depends on (set up by `build-native-lib.gradle.createNativeTarget`):
      *  - The KMP native target is named literally `"native"` (`mingwX64("native")` /
-     *    `linuxX64("native")` / `macosX64("native")`). That naming is what makes Gradle generate
-     *    the task names this method references — for any other target name the function
+     *    `linuxX64("native")` / `macosArm64("native")` or `macosX64("native")` by host arch). That
+     *    naming is what makes Gradle generate the task names this method references — for any other
+     *    target name the function
      *    silently no-ops (intentionally — multi-target setups like iOS frameworks have their own
      *    resource bundling pipeline via CocoaPods/Xcode, and adding generic copy tasks there
      *    would conflict).
