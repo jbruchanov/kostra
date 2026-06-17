@@ -55,16 +55,26 @@ internal class FileSystemResourceStorage(private val root: File) : KostraResourc
 internal object AndroidDefaultResourceStorage : KostraResourceStorage {
 
     override fun read(key: String): ByteArray {
-        propertyFilesystemStorage?.let { storage -> runCatching { storage.read(key) }.getOrNull()?.let { return it } }
+        propertyFilesystemStorages.forEach { storage -> runCatching { storage.read(key) }.getOrNull()?.let { return it } }
         classLoadersToTry().forEach { cl -> cl.getResourceAsStream(key)?.use { return it.readBytes() } }
         throw UnableToOpenResourceStream("$key | ${buildFailureDiagnostic(key)}")
     }
 
-    private val propertyFilesystemStorage: KostraResourceStorage? by lazy {
+    /**
+     * The [KostraResourceRootProperty] value may carry MORE THAN ONE root, [File.pathSeparator]-joined:
+     * a consumer module's host test points it at its OWN assets dir plus each
+     * `nativeResourceDependencies` module's assets dir (the module that actually owns the DBs). Try each
+     * root in declared order; the first that serves the key wins. A single-dir value (the common case)
+     * still works unchanged.
+     */
+    private val propertyFilesystemStorages: List<FileSystemResourceStorage> by lazy {
         System.getProperty(KostraResourceRootProperty)
-            ?.let(::File)
-            ?.takeIf { it.isDirectory }
-            ?.let(::FileSystemResourceStorage)
+            ?.split(File.pathSeparatorChar)
+            ?.filter { it.isNotEmpty() }
+            ?.map(::File)
+            ?.filter { it.isDirectory }
+            ?.map(::FileSystemResourceStorage)
+            .orEmpty()
     }
 
     /**
