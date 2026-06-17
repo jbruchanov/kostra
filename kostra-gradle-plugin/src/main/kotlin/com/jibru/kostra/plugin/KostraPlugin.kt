@@ -186,7 +186,6 @@ class KostraPlugin : Plugin<Project> {
         //per-project wiring needed. Only relevant to Android (the property is inert elsewhere), so
         //gate on an Android plugin being applied. `withType<Test>` also covers a sibling jvm target's
         //test task, which simply ignores the property (its classloader storage already works).
-        val assetsRoot = target.outputAssetsDir().absolutePath
         listOf(
             "com.android.kotlin.multiplatform.library",
             "com.android.library",
@@ -195,8 +194,22 @@ class KostraPlugin : Plugin<Project> {
             target.plugins.withId(androidPluginId) {
                 target.tasks.withType(org.gradle.api.tasks.testing.Test::class.java).configureEach { test ->
                     test.dependsOn(generateDbsTaskTaskProvider)
+                    //A consumer-only module (kostra applied purely to bridge another module's resources
+                    //via nativeResourceDependencies) owns no DBs in its OWN assets dir, so pointing the
+                    //fallback at that dir alone leaves host tests unable to resolve the dependency's
+                    //resources. Point it at this module's assets PLUS each nativeResourceDependencies
+                    //module's assets (File.pathSeparator-joined; the runtime tries each root). Read
+                    //inside configureEach so the extension is already populated by the consumer build.
+                    val depProjects = extension.nativeResourceDependencies.get()
+                        .mapNotNull { target.findProject(it) }
+                    val roots = (listOf(target.outputAssetsDir()) + depProjects.map { it.outputAssetsDir() })
+                        .joinToString(File.pathSeparator) { it.absolutePath }
                     //Shared runtime constant from :kostra-common (single source of truth).
-                    test.systemProperty(com.jibru.kostra.internal.KostraResourceRootProperty, assetsRoot)
+                    test.systemProperty(com.jibru.kostra.internal.KostraResourceRootProperty, roots)
+                    //Stage each dependency's DBs before the host test runs.
+                    depProjects.forEach { dep ->
+                        test.dependsOn("${dep.path}:${KostraPluginConfig.Tasks.GenerateDatabases}")
+                    }
                 }
             }
         }
