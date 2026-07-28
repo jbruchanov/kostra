@@ -75,7 +75,9 @@ abstract class KostraPluginExtension {
      * In strict mode every base language present in resources must define ALL string/plural keys.
      * Region/script variants (e.g. `en-rUK`, `en-rUS`, `zh-Hant`) may be partial — they only override
      * what differs from the base. Different languages each need their own complete translation.
-     * Default: true. Build fails with the list of missing keys when violated.
+     * Default: false, so `analyseResources` (and thus every build) doesn't fail on work-in-progress
+     * translations. Enable it to fail the build eagerly, or leave it off and run the always-on
+     * `validateResources` task on CI to enforce coverage on demand. Fails with the list of missing keys.
      */
     abstract val strictMode: Property<Boolean>
 

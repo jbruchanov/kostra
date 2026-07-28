@@ -21,6 +21,7 @@ import com.jibru.kostra.plugin.task.GenerateCodeTask
 import com.jibru.kostra.plugin.task.GenerateDatabasesTask
 import com.jibru.kostra.plugin.task.GenerateDefaultsTask
 import com.jibru.kostra.plugin.task.TaskDelegate
+import com.jibru.kostra.plugin.task.ValidateResourcesTask
 import java.io.File
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -80,6 +81,15 @@ class KostraPlugin : Plugin<Project> {
                 it.strictMode.set(extension.strictMode)
             }
 
+        //Explicit, always-on strict coverage gate, decoupled from the `strictMode` flag so it can be
+        //disabled during local dev (kostra.strictMode = false) yet enforced on CI via this task.
+        //Depends on analyseResources purely to consume its serialized analysis output.
+        target.tasks
+            .register(KostraPluginConfig.Tasks.ValidateResources, ValidateResourcesTask::class.java) {
+                it.resourcesAnalysisFile.set(analyseResourcesTaskProvider.flatMap { v -> v.outputFile })
+                it.dependsOn(analyseResourcesTaskProvider)
+            }
+
         val generateResourcesTaskProvider = target.tasks
             .register(KostraPluginConfig.Tasks.GenerateResources, GenerateCodeTask::class.java) { task ->
                 task.kClassName.set(extension.kClassName)
@@ -118,7 +128,7 @@ class KostraPlugin : Plugin<Project> {
             autoConfig.set(true)
             useFileWatcher.set(false)
             strictLocale.set(true)
-            strictMode.set(true)
+            strictMode.set(false)
             kClassName.set(KClassName)
             modulePrefix.set("")
             internalVisibility.set(false)

@@ -52,8 +52,7 @@ abstract class AnalyseResourcesTask : DefaultTask() {
         validateDefaultPluralFallback(processor)
 
         if (strictMode.getOrElse(true)) {
-            validateStrictModeStringCoverage(processor)
-            validateStrictModePluralCoverage(processor)
+            validateStrictModeCoverage(processor)
         }
 
         val outputFile = outputFile.get().asFile
@@ -107,29 +106,41 @@ abstract class AnalyseResourcesTask : DefaultTask() {
             )
         }
     }
+}
 
-    private fun validateStrictModeStringCoverage(processor: ResItemsProcessor) {
-        validateStrictModeCoverage(
-            type = "string",
-            keys = processor.stringsDistinctKeys,
-            valuePresentByLocale = processor.stringsForDbs
-                .mapValues { (_, values) -> values.map { it != null } },
-        )
-    }
+/**
+ * Runs the strict-mode string AND plural coverage checks against an already-computed [processor].
+ *
+ * Shared by [AnalyseResourcesTask] (gated on the `strictMode` extension flag) and
+ * [ValidateResourcesTask] (always, so CI can enforce coverage even when `strictMode` is disabled
+ * for local development). Throws [IllegalStateException] with the list of missing translations.
+ */
+internal fun validateStrictModeCoverage(processor: ResItemsProcessor) {
+    validateStrictModeStringCoverage(processor)
+    validateStrictModePluralCoverage(processor)
+}
 
-    private fun validateStrictModePluralCoverage(processor: ResItemsProcessor) {
-        val perLocale = processor.pluralsPerLocale ?: return
-        validateStrictModeCoverage(
-            type = "plural",
-            keys = processor.pluralsDistinctKeys,
-            // A missing plural entry is filled with `ResItem.Plurals.EmptyItems` — a list of the
-            // correct size but with every category null. Treat "all categories null" as missing.
-            valuePresentByLocale = perLocale
-                .mapValues { (_, items) ->
-                    items.map { (_, categoryItems) -> categoryItems.any { it != null } }
-                },
-        )
-    }
+private fun validateStrictModeStringCoverage(processor: ResItemsProcessor) {
+    validateStrictModeCoverage(
+        type = "string",
+        keys = processor.stringsDistinctKeys,
+        valuePresentByLocale = processor.stringsForDbs
+            .mapValues { (_, values) -> values.map { it != null } },
+    )
+}
+
+private fun validateStrictModePluralCoverage(processor: ResItemsProcessor) {
+    val perLocale = processor.pluralsPerLocale ?: return
+    validateStrictModeCoverage(
+        type = "plural",
+        keys = processor.pluralsDistinctKeys,
+        // A missing plural entry is filled with `ResItem.Plurals.EmptyItems` — a list of the
+        // correct size but with every category null. Treat "all categories null" as missing.
+        valuePresentByLocale = perLocale
+            .mapValues { (_, items) ->
+                items.map { (_, categoryItems) -> categoryItems.any { it != null } }
+            },
+    )
 }
 
 /**

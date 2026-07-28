@@ -36,6 +36,7 @@ object KostraPluginConfig {
     object Tasks {
         const val Group = "kostra"
         const val AnalyseResources = "analyseResources"
+        const val ValidateResources = "validateResources"
         const val GenerateResources = "generateResources"
         const val GenerateDefaults = "generateDefaults"
         const val GenerateDatabases = "generateDatabases"
