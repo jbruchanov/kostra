@@ -222,6 +222,7 @@ KGP analyses and generates code based on defined resources. Workflow is split in
 - `app.K` class generation (`generateResources`) where you can find references to your resources.
 - Help functions generation (`generateDefaults`) how to access easily your resources.
 - Create internal DBs (`generateDatabases`) for strings/plurals and any file references.
+- On-demand translation coverage gate (`validateResources`) — runs the strict-mode string/plural coverage check regardless of the `kostra.strictMode` flag, so you can keep `strictMode = false` for local dev and enforce full coverage on CI with `./gradlew validateResources`. See [Strict Mode](#strict-mode).
 
 All wiring up is done automatically (`kostra.autoConfig` if enabled) for `JVM` & `KotlinMultiplatform` gradle plugins. In case of any bug
 or usage outside of these 2 use cases, code is written into `build/generated/kostra/src*` and DBs into `build/generated/kostra/resources`, those 2 outputs must be incorporated
@@ -552,9 +553,14 @@ The build will fail if any key is missing a default value, since it serves as th
 
 #### Strict Mode
 
-When `kostra.strictMode = true` (default), the analyser additionally requires every **base language**
+When `kostra.strictMode = true`, the analyser additionally requires every **base language**
 present in resources to define all string/plural keys. **Region/script variants** of a base language
 may be partial — they only need to override what differs from the base.
+
+The flag defaults to `false`, so a work-in-progress translation doesn't fail every build. You can
+either turn it on to fail eagerly, or leave it off and run the always-on
+[`validateResources`](#enforcing-coverage-only-on-ci-validateresources) task on CI to enforce
+coverage on demand.
 
 Given a `default` translation plus `en`, `en-rUK`, `en-rUS`, `cs`:
 
@@ -566,9 +572,30 @@ Given a `default` translation plus `en`, `en-rUK`, `en-rUS`, `cs`:
 | `cs` (base of `cs`) | All keys |
 | `cs-rCZ` *(if present)* | Only the keys that differ from `cs` |
 
-If you have an `en-rUK` translation but no base `en` file, the build fails — the region variant
-has nothing to fall back to. Either add the base `en` translation or disable strict mode with
+If you have `en-rUK`/`en-rUS` variants but **no** base `en` file, that is valid — the variants are
+partial overrides layered on the complete `default` bucket, and any key they don't define resolves
+through `variant → default` (mirroring Android's `values-en-rUK → values` fallback). This matches
+Android's own semantics; requiring a redundant bare `en` file would be stricter than Android itself.
+What strict mode does forbid is a base language file (e.g. `en`) that is present but incomplete — a
+half-translated language is treated as a bug. Add the missing keys, or disable strict mode with
 `kostra.strictMode = false`.
+
+##### Enforcing coverage only on CI (`validateResources`)
+
+`strictMode = true` runs the coverage check on **every** build (`analyseResources` is part of code
+generation), which is inconvenient while a translation is a work in progress. That's why it defaults
+to `false` — local builds stay fast — and you enforce coverage explicitly on CI instead:
+
+```bash
+# CI step — fails the build if any base language is missing string/plural keys,
+# regardless of the strictMode flag:
+./gradlew validateResources
+```
+
+`validateResources` runs exactly the same string/plural coverage checks `strictMode = true` performs;
+it just runs them on demand instead of on every build. The default-fallback check (every key has a
+value in the base/non-qualified resources) always runs during `analyseResources` and is unaffected
+by either setting.
 
 #### Strings formatting
 
